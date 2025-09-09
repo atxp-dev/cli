@@ -2,6 +2,14 @@
 
 Command line tools for the ATXP ecosystem - create projects and run demos.
 
+## About ATXP
+
+ATXP is a platform for building web agents with OAuth and payment capabilities. The CLI helps you:
+
+- Create new projects with ATXP integration
+- Set up development environments quickly
+- Run interactive demos to explore ATXP features  
+
 ## Packages
 
 This monorepo contains:
@@ -9,20 +17,49 @@ This monorepo contains:
 - **`atxp`** - Main CLI package for creating projects and running demos
 - **`create-atxp`** - Wrapper package for `npm create atxp` support
 
-## Usage
+## Commands
 
-### Run Demo
+- `npx atxp` - Show help and available commands
+- `npx atxp demo` - Run the interactive demo application
+- `npx atxp create` - Create a new ATXP project
+- `npx atxp help` - Display help information
+
+### Demo Options
+- `--verbose, -v` - Show detailed logs
+- `--refresh` - Force refresh demo from GitHub
+
+## Examples
+
+### Get Started
 ```bash
+# Show available commands and help
 npx atxp
-# or with verbose output
-npx atxp --verbose
 ```
 
-### Create Project
+### Try the Demo
 ```bash
-npx atxp create
-# or
-npm create atxp
+# Run the interactive demo
+npx atxp demo
+
+# Run with detailed output  
+npx atxp demo --verbose
+
+# Force refresh from GitHub
+npx atxp demo --refresh
+```
+
+### Create a New Project
+```bash
+# Create a new project
+npx atxp create my-app
+
+# Alternative method
+npm create atxp my-app
+
+# Set up the project
+cd my-app
+npm install
+npm start
 ```
 
 ## Development
