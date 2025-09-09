@@ -5,6 +5,7 @@ import os from 'os';
 import { createProject } from './create-project.js';
 import { runDemo } from './run-demo.js';
 import { showHelp } from './help.js';
+import { checkAllDependencies, showDependencyError } from './check-dependencies.js';
 
 interface DemoOptions {
   port: number;
@@ -54,20 +55,37 @@ const isCreateMode = process.env.npm_config_argv?.includes('create') ||
                      command === 'create';
 
 // Handle different commands
-if (isCreateMode) {
-  console.log('Creating new ATXP project...');
-  createProject();
-} else if (command === 'demo') {
-  console.log('Starting ATXP demo...');
-  runDemo(demoOptions);
-} else if (command === 'help' || command === '--help' || command === '-h') {
-  showHelp();
-} else if (!command) {
-  // No command provided - show help instead of running demo
-  showHelp();
-} else {
-  // Unknown command
-  console.log(`Unknown command: ${command}`);
-  console.log('Run "npx atxp help" for usage information.');
-  process.exit(1);
+async function main() {
+  if (isCreateMode) {
+    console.log('Creating new ATXP project...');
+    const dependenciesOk = await checkAllDependencies('create');
+    if (!dependenciesOk) {
+      showDependencyError('create');
+      process.exit(1);
+    }
+    createProject();
+  } else if (command === 'demo') {
+    console.log('Starting ATXP demo...');
+    const dependenciesOk = await checkAllDependencies('demo');
+    if (!dependenciesOk) {
+      showDependencyError('demo');
+      process.exit(1);
+    }
+    runDemo(demoOptions);
+  } else if (command === 'help' || command === '--help' || command === '-h') {
+    showHelp();
+  } else if (!command) {
+    // No command provided - show help instead of running demo
+    showHelp();
+  } else {
+    // Unknown command
+    console.log(`Unknown command: ${command}`);
+    console.log('Run "npx atxp help" for usage information.');
+    process.exit(1);
+  }
 }
+
+main().catch((error) => {
+  console.error('An unexpected error occurred:', error.message);
+  process.exit(1);
+});
