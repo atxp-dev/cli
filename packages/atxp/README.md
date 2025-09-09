@@ -36,11 +36,16 @@ Runs the interactive ATXP demo application.
 **Options:**
 - `--verbose, -v` - Show detailed logs
 - `--refresh` - Force refresh demo from GitHub
+- `--port, -p` - Specify port number (default: 8016)
+- `--dir, -d` - Specify demo directory (default: ~/.cache/atxp/demo)
 
 **Examples:**
 ```bash
 npx atxp demo
 npx atxp demo --verbose
+npx atxp demo --port 3000
+npx atxp demo --dir ./my-demo
+npx atxp demo --port 3000 --dir ./my-demo --verbose
 npx atxp demo --refresh
 ```
 
