@@ -1,0 +1,75 @@
+name: Release to GitHub and NPM
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write  # Need write access to push commits
+      id-token: write  # For npm provenance
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@atxp'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Run tests
+        run: npm test
+        continue-on-error: false
+      
+      - name: Update package.json versions and commit
+        run: |
+          # Remove 'v' prefix if present (v1.2.3 → 1.2.3)
+          VERSION=${{ github.event.release.tag_name }}
+          VERSION=${VERSION#v}
+
+          # Configure git
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          # Update root package version
+          npm version $VERSION --no-git-tag-version
+          
+          # Update all workspace package versions
+          npm version $VERSION --no-git-tag-version -w packages/atxp
+          npm version $VERSION --no-git-tag-version -w packages/create-atxp
+          
+          # Update cross-package dependencies to match new version
+          npm pkg set dependencies."@atxp/common"=$VERSION -w packages/atxp
+          npm pkg set dependencies."@atxp/common"=$VERSION -w packages/create-atxp
+          
+          # Regenerate package-lock.json with updated versions
+          npm install
+          
+          # Commit all changes
+          git add package.json package-lock.json packages/*/package.json
+          git commit -m "bump version to $VERSION [skip ci]"
+          git push origin HEAD:${{ github.event.repository.default_branch }}
+      
+      - name: Publish packages to NPM
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          # Publish all workspace packages (order matters for dependencies)
+          npm publish -w packages/atxp --provenance --access public
+          npm publish -w packages/create-atxp --provenance --access public
