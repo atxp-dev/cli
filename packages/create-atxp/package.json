@@ -16,12 +16,13 @@
     "index.js"
   ],
   "scripts": {
-    "build": "echo",
-    "typecheck": "echo",
-    "lint": "echo",
-    "lint:fix": "echo",
-    "test": "echo",
-    "prepublishOnly": "echo"
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "atxp",
@@ -31,5 +32,9 @@
   ],
   "dependencies": {
     "atxp": "^1.0.3"
+  },
+  "devDependencies": {
+    "eslint": "^9.32.0",
+    "globals": "^16.3.0"
   }
 }
