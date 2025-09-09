@@ -18,7 +18,7 @@ interface PackageJson {
 // Template repositories
 const TEMPLATES = {
   agent: {
-    url: 'https://github.com/atxp-dev/agent-demo.git',
+    url: 'https://github.com/atxp-dev/atxp-express-example.git',
     humanText: 'Agent Demo (Full-stack web agent)'
   }
 };

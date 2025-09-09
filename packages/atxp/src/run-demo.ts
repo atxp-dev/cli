@@ -11,7 +11,7 @@ interface DemoOptions {
   refresh: boolean;
 }
 
-const DEMO_REPO_URL = 'https://github.com/atxp-dev/agent-demo.git';
+const DEMO_REPO_URL = 'https://github.com/atxp-dev/atxp-express-example.git';
 
 export async function runDemo(options: DemoOptions): Promise<void> {
   try {
