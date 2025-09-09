@@ -21,7 +21,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "vitest run",
+    "test": "echo 'No tests to run for create-atxp wrapper package'",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
