@@ -2,9 +2,11 @@ import chalk from 'chalk';
 import { spawn } from 'child_process';
 import fs from 'fs-extra';
 import open from 'open';
+import path from 'path';
 
 interface DemoOptions {
-  port: number;
+  frontendPort: number;
+  backendPort: number;
   dir: string;
   verbose: boolean;
   refresh: boolean;
@@ -32,8 +34,11 @@ export async function runDemo(options: DemoOptions): Promise<void> {
     // Install dependencies if needed
     await installDependencies(options.dir, options.verbose);
 
+    // Create .env files for configuration
+    await createEnvFiles(options.dir, options.frontendPort, options.backendPort, options.verbose);
+
     // Start the demo and open browser
-    await startDemo(options.port, options.dir, options.verbose);
+    await startDemo(options.frontendPort, options.backendPort, options.dir, options.verbose);
 
   } catch (error) {
     console.error(chalk.red('Error starting demo:'), (error as Error).message);
@@ -124,9 +129,9 @@ async function installDependencies(demoDir: string, isVerbose: boolean): Promise
   });
 }
 
-async function startDemo(port: number, demoDir: string, isVerbose: boolean): Promise<void> {
+async function startDemo(frontendPort: number, backendPort: number, demoDir: string, isVerbose: boolean): Promise<void> {
   console.log(chalk.blue('Starting demo application...'));
-  console.log(chalk.green(`Demo will be available at: http://localhost:${port}`));
+  console.log(chalk.green(`Demo will be available at: http://localhost:${frontendPort}`));
   console.log(chalk.gray(`Demo directory: ${demoDir}`));
   console.log(chalk.yellow('Press Ctrl+C to stop the demo'));
   if (!isVerbose) {
@@ -137,7 +142,10 @@ async function startDemo(port: number, demoDir: string, isVerbose: boolean): Pro
     // Set the port environment variable for the demo
     const env = { 
       ...process.env, 
-      PORT: port.toString(),
+      PORT: frontendPort.toString(),
+      FRONTEND_PORT: frontendPort.toString(),
+      BACKEND_PORT: backendPort.toString(),
+      REACT_APP_BACKEND_PORT: backendPort.toString(),
       // Suppress deprecation warnings
       NODE_NO_WARNINGS: '1',
       // Suppress React warnings in development
@@ -190,10 +198,10 @@ async function startDemo(port: number, demoDir: string, isVerbose: boolean): Pro
       if (!demoOpenedBrowser) {
         try {
           console.log(chalk.blue('Opening browser...'));
-          await open(`http://localhost:${port}`);
+          await open(`http://localhost:${frontendPort}`);
         } catch {
           console.log(chalk.yellow('Could not open browser automatically'));
-          console.log(chalk.white(`Please open http://localhost:${port} in your browser`));
+          console.log(chalk.white(`Please open http://localhost:${frontendPort} in your browser`));
         }
       }
     }, 2000);
@@ -222,6 +230,36 @@ async function startDemo(port: number, demoDir: string, isVerbose: boolean): Pro
       reject(new Error(`Failed to start demo: ${error.message}`));
     });
   });
+}
+
+async function createEnvFiles(demoDir: string, frontendPort: number, backendPort: number, isVerbose: boolean): Promise<void> {
+  if (isVerbose) {
+    console.log(chalk.blue('Creating .env files...'));
+  }
+  
+  try {
+    // Create backend .env file
+    const backendEnvPath = path.join(demoDir, 'backend', '.env');
+    const backendEnvContent = `PORT=${backendPort}\nFRONTEND_PORT=${frontendPort}\n`;
+    await fs.writeFile(backendEnvPath, backendEnvContent);
+    
+    if (isVerbose) {
+      console.log(chalk.gray(`Created backend .env: ${backendEnvPath}`));
+    }
+    
+    // Create frontend .env file
+    const frontendEnvPath = path.join(demoDir, 'frontend', '.env');
+    const frontendEnvContent = `PORT=${frontendPort}\nREACT_APP_BACKEND_PORT=${backendPort}\n`;
+    await fs.writeFile(frontendEnvPath, frontendEnvContent);
+    
+    if (isVerbose) {
+      console.log(chalk.gray(`Created frontend .env: ${frontendEnvPath}`));
+    }
+    
+  } catch (error) {
+    console.log(chalk.yellow(`Warning: Could not create .env files: ${(error as Error).message}`));
+    console.log(chalk.gray('Demo will use environment variables passed directly'));
+  }
 }
 
 async function cleanup(): Promise<void> {
