@@ -9,7 +9,7 @@
   },
   "main": "dist/index.js",
   "bin": {
-    "atxp": "./dist/index.js"
+    "atxp": "dist/index.js"
   },
   "type": "module",
   "files": [
