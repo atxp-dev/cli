@@ -43,7 +43,14 @@ export async function runDemo(options: DemoOptions): Promise<void> {
 
 async function cloneDemoRepo(demoDir: string, isVerbose: boolean): Promise<void> {
   return new Promise((resolve, reject) => {
-    const git = spawn('git', ['clone', DEMO_REPO_URL, demoDir], {
+    const git = spawn('git', [
+      'clone', 
+      '--depth', '1',           // Shallow clone - only latest commit
+      '--single-branch',        // Only clone the default branch
+      '--branch', 'main',       // Explicitly target main branch
+      DEMO_REPO_URL, 
+      demoDir
+    ], {
       stdio: isVerbose ? 'inherit' : 'pipe'
     });
 
@@ -64,7 +71,11 @@ async function cloneDemoRepo(demoDir: string, isVerbose: boolean): Promise<void>
 
 async function updateDemoRepo(demoDir: string, isVerbose: boolean): Promise<void> {
   return new Promise((resolve, _reject) => {
-    const git = spawn('git', ['pull'], {
+    const git = spawn('git', [
+      'pull', 
+      '--depth', '1',           // Keep shallow history during pull
+      'origin', 'main'          // Explicitly pull from main branch
+    ], {
       cwd: demoDir,
       stdio: isVerbose ? 'inherit' : 'pipe'
     });
