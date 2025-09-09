@@ -9,7 +9,7 @@
   },
   "main": "index.js",
   "bin": {
-    "create-atxp": "./index.js"
+    "create-atxp": "index.js"
   },
   "type": "module",
   "files": [
