@@ -142,7 +142,8 @@ async function startDemo(frontendPort: number, backendPort: number, demoDir: str
     // Set the port environment variable for the demo
     const env = { 
       ...process.env, 
-      PORT: frontendPort.toString(),
+      // Backend will use PORT from its .env file, frontend will use PORT from its .env file
+      // We don't set PORT globally to avoid conflicts - let each service read its own .env
       FRONTEND_PORT: frontendPort.toString(),
       BACKEND_PORT: backendPort.toString(),
       REACT_APP_BACKEND_PORT: backendPort.toString(),
