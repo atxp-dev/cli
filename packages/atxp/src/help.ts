@@ -16,18 +16,21 @@ export function showHelp(): void {
   console.log();
   
   console.log(chalk.bold('Demo Options:'));
-  console.log('  ' + chalk.yellow('--verbose, -v') + '  ' + 'Show detailed logs');
-  console.log('  ' + chalk.yellow('--refresh') + '      ' + 'Force refresh the demo from GitHub');
-  console.log('  ' + chalk.yellow('--port, -p') + '    ' + 'Specify port number (default: 8016)');
-  console.log('  ' + chalk.yellow('--dir, -d') + '     ' + 'Specify demo directory (default: ~/.cache/atxp/demo)');
+  console.log('  ' + chalk.yellow('--verbose, -v') + '       ' + 'Show detailed logs');
+  console.log('  ' + chalk.yellow('--refresh') + '           ' + 'Force refresh the demo from GitHub');
+  console.log('  ' + chalk.yellow('--frontend-port, --fp') + ' ' + 'Specify frontend port (default: 8016)');
+  console.log('  ' + chalk.yellow('--backend-port, --bp') + '  ' + 'Specify backend port (default: 8017)');
+  console.log('  ' + chalk.yellow('--dir, -d') + '          ' + 'Specify demo directory (default: ~/.cache/atxp/demo)');
   console.log();
   
   console.log(chalk.bold('Examples:'));
-  console.log('  npx atxp demo                          # Run the demo with defaults');
+  console.log('  npx atxp demo                          # Run the demo with defaults (frontend: 8016, backend: 8017)');
   console.log('  npx atxp demo --verbose                # Run demo with detailed logs');
-  console.log('  npx atxp demo --port 3000              # Run demo on port 3000');
+  console.log('  npx atxp demo --frontend-port 4000     # Run demo with frontend on port 4000');
+  console.log('  npx atxp demo --backend-port 4001      # Run demo with backend on port 4001');
   console.log('  npx atxp demo --dir ./my-demo          # Use custom demo directory');
-  console.log('  npx atxp demo --port 3000 --dir ./demo # Custom port and directory');
+  console.log('  npx atxp demo --frontend-port 4000 --backend-port 4001 # Custom ports');
+  console.log('  npx atxp demo --dir ./my-demo --frontend-port 4000     # Custom directory and port');
   console.log('  npx atxp create                        # Create a new project');
   console.log();
   
