@@ -133,7 +133,14 @@ async function cloneTemplate(template: string, projectPath: string): Promise<voi
   return new Promise((resolve, reject) => {
     console.log(chalk.blue('Downloading template from GitHub...'));
     
-    const git = spawn('git', ['clone', templateConfig.url, projectPath], {
+    const git = spawn('git', [
+      'clone',
+      '--depth', '1',           // Shallow clone - only latest commit  
+      '--single-branch',        // Only clone the default branch
+      '--branch', 'main',       // Explicitly target main branch
+      templateConfig.url, 
+      projectPath
+    ], {
       stdio: 'inherit'
     });
 
