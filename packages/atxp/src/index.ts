@@ -78,9 +78,10 @@ async function main() {
     // No command provided - show help instead of running demo
     showHelp();
   } else {
-    // Unknown command
+    // Unknown command - show help instead of just error
     console.log(`Unknown command: ${command}`);
-    console.log('Run "npx atxp help" for usage information.');
+    console.log();
+    showHelp();
     process.exit(1);
   }
 }
