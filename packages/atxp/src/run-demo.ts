@@ -147,13 +147,14 @@ async function startDemo(frontendPort: number, backendPort: number, demoDir: str
       FRONTEND_PORT: frontendPort.toString(),
       BACKEND_PORT: backendPort.toString(),
       REACT_APP_BACKEND_PORT: backendPort.toString(),
+      NODE_ENV: 'production',
       // Suppress deprecation warnings
       NODE_NO_WARNINGS: '1',
       // Suppress React warnings in development
       CI: 'false'
     };
     
-    const demo = spawn('npm', ['run', 'dev'], {
+    const demo = spawn('npm', ['run', 'start'], {
       cwd: demoDir,
       stdio: 'pipe', // Always use pipe to capture output
       env
