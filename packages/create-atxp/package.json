@@ -1,0 +1,35 @@
+{
+  "name": "create-atxp",
+  "version": "1.0.3",
+  "description": "Create ATXP projects - Scaffold new ATXP applications from templates",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atxp-dev/cli.git"
+  },
+  "main": "index.js",
+  "bin": {
+    "create-atxp": "./index.js"
+  },
+  "type": "module",
+  "files": [
+    "index.js"
+  ],
+  "scripts": {
+    "build": "echo",
+    "typecheck": "echo",
+    "lint": "echo",
+    "lint:fix": "echo",
+    "test": "echo",
+    "prepublishOnly": "echo"
+  },
+  "keywords": [
+    "atxp",
+    "create",
+    "scaffold",
+    "template"
+  ],
+  "dependencies": {
+    "atxp": "^1.0.3"
+  }
+}
