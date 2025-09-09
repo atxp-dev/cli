@@ -31,7 +31,7 @@ function parseArgs(): { command: string; demoOptions: DemoOptions } {
       const parsed = parseInt(portValue, 10);
       if (parsed > 0 && parsed < 65536) return parsed;
     }
-    return 3000; // default frontend port
+    return 8016; // default frontend port
   })();
   
   const backendPort = (() => {
@@ -40,7 +40,7 @@ function parseArgs(): { command: string; demoOptions: DemoOptions } {
       const parsed = parseInt(portValue, 10);
       if (parsed > 0 && parsed < 65536) return parsed;
     }
-    return 3001; // default backend port
+    return 8017; // default backend port
   })();
   
   const dir = (() => {

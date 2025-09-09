@@ -18,13 +18,13 @@ export function showHelp(): void {
   console.log(chalk.bold('Demo Options:'));
   console.log('  ' + chalk.yellow('--verbose, -v') + '       ' + 'Show detailed logs');
   console.log('  ' + chalk.yellow('--refresh') + '           ' + 'Force refresh the demo from GitHub');
-  console.log('  ' + chalk.yellow('--frontend-port, --fp') + ' ' + 'Specify frontend port (default: 3000)');
-  console.log('  ' + chalk.yellow('--backend-port, --bp') + '  ' + 'Specify backend port (default: 3001)');
+  console.log('  ' + chalk.yellow('--frontend-port, --fp') + ' ' + 'Specify frontend port (default: 8016)');
+  console.log('  ' + chalk.yellow('--backend-port, --bp') + '  ' + 'Specify backend port (default: 8017)');
   console.log('  ' + chalk.yellow('--dir, -d') + '          ' + 'Specify demo directory (default: ~/.cache/atxp/demo)');
   console.log();
   
   console.log(chalk.bold('Examples:'));
-  console.log('  npx atxp demo                          # Run the demo with defaults (frontend: 3000, backend: 3001)');
+  console.log('  npx atxp demo                          # Run the demo with defaults (frontend: 8016, backend: 8017)');
   console.log('  npx atxp demo --verbose                # Run demo with detailed logs');
   console.log('  npx atxp demo --frontend-port 4000     # Run demo with frontend on port 4000');
   console.log('  npx atxp demo --backend-port 4001      # Run demo with backend on port 4001');
