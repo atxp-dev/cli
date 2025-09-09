@@ -1,7 +1,6 @@
 import chalk from 'chalk';
 import { spawn } from 'child_process';
 import fs from 'fs-extra';
-import path from 'path';
 import open from 'open';
 
 interface DemoOptions {
