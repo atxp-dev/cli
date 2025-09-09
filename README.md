@@ -27,6 +27,8 @@ This monorepo contains:
 ### Demo Options
 - `--verbose, -v` - Show detailed logs
 - `--refresh` - Force refresh demo from GitHub
+- `--port, -p` - Specify port number (default: 8016)
+- `--dir, -d` - Specify demo directory (default: ~/.cache/atxp/demo)
 
 ## Examples
 
@@ -43,6 +45,15 @@ npx atxp demo
 
 # Run with detailed output  
 npx atxp demo --verbose
+
+# Use custom port
+npx atxp demo --port 3000
+
+# Use custom directory
+npx atxp demo --dir ./my-demo
+
+# Combine options
+npx atxp demo --port 3000 --dir ./my-demo --verbose
 
 # Force refresh from GitHub
 npx atxp demo --refresh

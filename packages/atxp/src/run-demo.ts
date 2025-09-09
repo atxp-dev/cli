@@ -3,37 +3,38 @@ import { spawn } from 'child_process';
 import fs from 'fs-extra';
 import path from 'path';
 import open from 'open';
-import os from 'os';
+
+interface DemoOptions {
+  port: number;
+  dir: string;
+  verbose: boolean;
+  refresh: boolean;
+}
 
 const DEMO_REPO_URL = 'https://github.com/atxp-dev/agent-demo.git';
-const DEMO_DIR = path.join(os.homedir(), '.cache', 'atxp', 'demo');
-const DEMO_PORT = 8016;
 
-const isVerbose = process.argv.includes('--verbose') || process.argv.includes('-v');
-const shouldRefresh = process.argv.includes('--refresh');
-
-export async function runDemo(): Promise<void> {
+export async function runDemo(options: DemoOptions): Promise<void> {
   try {
     // Check if demo directory exists, if not clone it
-    if (!await fs.pathExists(DEMO_DIR)) {
+    if (!await fs.pathExists(options.dir)) {
       console.log(chalk.blue('Downloading demo from GitHub...'));
-      await cloneDemoRepo();
-    } else if (shouldRefresh) {
+      await cloneDemoRepo(options.dir, options.verbose);
+    } else if (options.refresh) {
       // Force refresh if --refresh flag is used
       console.log(chalk.blue('Forcing demo refresh...'));
-      await fs.remove(DEMO_DIR);
-      await cloneDemoRepo();
+      await fs.remove(options.dir);
+      await cloneDemoRepo(options.dir, options.verbose);
     } else {
       console.log(chalk.blue('Using existing demo...'));
       // Pull latest changes
-      await updateDemoRepo();
+      await updateDemoRepo(options.dir, options.verbose);
     }
 
     // Install dependencies if needed
-    await installDependencies();
+    await installDependencies(options.dir, options.verbose);
 
     // Start the demo and open browser
-    await startDemo();
+    await startDemo(options.port, options.dir, options.verbose);
 
   } catch (error) {
     console.error(chalk.red('Error starting demo:'), (error as Error).message);
@@ -41,9 +42,9 @@ export async function runDemo(): Promise<void> {
   }
 }
 
-async function cloneDemoRepo(): Promise<void> {
+async function cloneDemoRepo(demoDir: string, isVerbose: boolean): Promise<void> {
   return new Promise((resolve, reject) => {
-    const git = spawn('git', ['clone', DEMO_REPO_URL, DEMO_DIR], {
+    const git = spawn('git', ['clone', DEMO_REPO_URL, demoDir], {
       stdio: isVerbose ? 'inherit' : 'pipe'
     });
 
@@ -62,10 +63,10 @@ async function cloneDemoRepo(): Promise<void> {
   });
 }
 
-async function updateDemoRepo(): Promise<void> {
+async function updateDemoRepo(demoDir: string, isVerbose: boolean): Promise<void> {
   return new Promise((resolve, _reject) => {
     const git = spawn('git', ['pull'], {
-      cwd: DEMO_DIR,
+      cwd: demoDir,
       stdio: isVerbose ? 'inherit' : 'pipe'
     });
 
@@ -86,7 +87,7 @@ async function updateDemoRepo(): Promise<void> {
   });
 }
 
-async function installDependencies(): Promise<void> {
+async function installDependencies(demoDir: string, isVerbose: boolean): Promise<void> {
   console.log(chalk.blue('Installing dependencies...'));
   
   return new Promise((resolve, reject) => {
@@ -94,7 +95,7 @@ async function installDependencies(): Promise<void> {
     const npmArgs = isVerbose ? ['run', 'install-all'] : ['run', 'install-all', '--silent'];
     
     const npm = spawn('npm', npmArgs, {
-      cwd: DEMO_DIR,
+      cwd: demoDir,
       stdio: isVerbose ? 'inherit' : 'pipe'
     });
 
@@ -113,9 +114,10 @@ async function installDependencies(): Promise<void> {
   });
 }
 
-async function startDemo(): Promise<void> {
+async function startDemo(port: number, demoDir: string, isVerbose: boolean): Promise<void> {
   console.log(chalk.blue('Starting demo application...'));
-  console.log(chalk.green(`Demo will be available at: http://localhost:${DEMO_PORT}`));
+  console.log(chalk.green(`Demo will be available at: http://localhost:${port}`));
+  console.log(chalk.gray(`Demo directory: ${demoDir}`));
   console.log(chalk.yellow('Press Ctrl+C to stop the demo'));
   if (!isVerbose) {
     console.log(chalk.gray('Run with --verbose to see detailed logs'));
@@ -125,7 +127,7 @@ async function startDemo(): Promise<void> {
     // Set the port environment variable for the demo
     const env = { 
       ...process.env, 
-      PORT: DEMO_PORT.toString(),
+      PORT: port.toString(),
       // Suppress deprecation warnings
       NODE_NO_WARNINGS: '1',
       // Suppress React warnings in development
@@ -133,7 +135,7 @@ async function startDemo(): Promise<void> {
     };
     
     const demo = spawn('npm', ['run', 'dev'], {
-      cwd: DEMO_DIR,
+      cwd: demoDir,
       stdio: 'pipe', // Always use pipe to capture output
       env
     });
@@ -178,10 +180,10 @@ async function startDemo(): Promise<void> {
       if (!demoOpenedBrowser) {
         try {
           console.log(chalk.blue('Opening browser...'));
-          await open(`http://localhost:${DEMO_PORT}`);
+          await open(`http://localhost:${port}`);
         } catch {
           console.log(chalk.yellow('Could not open browser automatically'));
-          console.log(chalk.white(`Please open http://localhost:${DEMO_PORT} in your browser`));
+          console.log(chalk.white(`Please open http://localhost:${port} in your browser`));
         }
       }
     }, 2000);

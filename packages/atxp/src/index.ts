@@ -1,11 +1,52 @@
 #!/usr/bin/env node
 
+import path from 'path';
+import os from 'os';
 import { createProject } from './create-project.js';
 import { runDemo } from './run-demo.js';
 import { showHelp } from './help.js';
 
-// Get the command from arguments
-const command = process.argv[2];
+interface DemoOptions {
+  port: number;
+  dir: string;
+  verbose: boolean;
+  refresh: boolean;
+}
+
+// Parse command line arguments
+function parseArgs(): { command: string; demoOptions: DemoOptions } {
+  const command = process.argv[2];
+  
+  // Parse demo options
+  const getArgValue = (flag: string, shortFlag: string): string | undefined => {
+    const index = process.argv.findIndex(arg => arg === flag || arg === shortFlag);
+    return index !== -1 ? process.argv[index + 1] : undefined;
+  };
+  
+  const port = (() => {
+    const portValue = getArgValue('--port', '-p');
+    if (portValue) {
+      const parsed = parseInt(portValue, 10);
+      if (parsed > 0 && parsed < 65536) return parsed;
+    }
+    return 8016; // default port
+  })();
+  
+  const dir = (() => {
+    const dirValue = getArgValue('--dir', '-d');
+    return dirValue ? path.resolve(dirValue) : path.join(os.homedir(), '.cache', 'atxp', 'demo');
+  })();
+  
+  const verbose = process.argv.includes('--verbose') || process.argv.includes('-v');
+  const refresh = process.argv.includes('--refresh');
+  
+  return {
+    command,
+    demoOptions: { port, dir, verbose, refresh }
+  };
+}
+
+const { command, demoOptions } = parseArgs();
 
 // Detect if we're in create mode (npm create atxp or npx atxp create)
 const isCreateMode = process.env.npm_config_argv?.includes('create') || 
@@ -18,7 +59,7 @@ if (isCreateMode) {
   createProject();
 } else if (command === 'demo') {
   console.log('Starting ATXP demo...');
-  runDemo();
+  runDemo(demoOptions);
 } else if (command === 'help' || command === '--help' || command === '-h') {
   showHelp();
 } else if (!command) {
