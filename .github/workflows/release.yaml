@@ -55,8 +55,7 @@ jobs:
           npm version $VERSION --no-git-tag-version -w packages/create-atxp
           
           # Update cross-package dependencies to match new version
-          npm pkg set dependencies."@atxp/common"=$VERSION -w packages/atxp
-          npm pkg set dependencies."@atxp/common"=$VERSION -w packages/create-atxp
+          npm pkg set dependencies."atxp"=$VERSION -w packages/create-atxp
           
           # Regenerate package-lock.json with updated versions
           npm install
