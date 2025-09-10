@@ -76,26 +76,50 @@ async function cloneDemoRepo(demoDir: string, isVerbose: boolean): Promise<void>
 
 async function updateDemoRepo(demoDir: string, isVerbose: boolean): Promise<void> {
   return new Promise((resolve, _reject) => {
-    const git = spawn('git', [
-      'pull', 
-      '--depth', '1',           // Keep shallow history during pull
-      'origin', 'main'          // Explicitly pull from main branch
+    // First fetch the latest changes
+    const fetch = spawn('git', [
+      'fetch', 
+      '--depth', '1',           // Keep shallow history during fetch
+      'origin', 'main'          // Explicitly fetch from main branch
     ], {
       cwd: demoDir,
       stdio: isVerbose ? 'inherit' : 'pipe'
     });
 
-    git.on('close', (code) => {
-      if (code === 0) {
-        console.log(chalk.green('Demo updated successfully'));
+    fetch.on('close', (fetchCode) => {
+      if (fetchCode !== 0) {
+        console.log(chalk.yellow('Could not fetch updates, using existing version'));
         resolve();
-      } else {
+        return;
+      }
+
+      // Reset local branch to match remote exactly (discarding any local changes)
+      const reset = spawn('git', [
+        'reset', 
+        '--hard',               // Discard local changes
+        'origin/main'           // Reset to remote main branch
+      ], {
+        cwd: demoDir,
+        stdio: isVerbose ? 'inherit' : 'pipe'
+      });
+
+      reset.on('close', (resetCode) => {
+        if (resetCode === 0) {
+          console.log(chalk.green('Demo updated successfully'));
+          resolve();
+        } else {
+          console.log(chalk.yellow('Could not update demo, using existing version'));
+          resolve(); // Don't fail if update fails
+        }
+      });
+
+      reset.on('error', (_error) => {
         console.log(chalk.yellow('Could not update demo, using existing version'));
         resolve(); // Don't fail if update fails
-      }
+      });
     });
 
-    git.on('error', (_error) => {
+    fetch.on('error', (_error) => {
       console.log(chalk.yellow('Could not update demo, using existing version'));
       resolve(); // Don't fail if update fails
     });
@@ -107,7 +131,7 @@ async function installDependencies(demoDir: string, isVerbose: boolean): Promise
   
   return new Promise((resolve, reject) => {
     // Use --silent flag to reduce npm output
-    const npmArgs = isVerbose ? ['run', 'install-all'] : ['run', 'install-all', '--silent'];
+    const npmArgs = isVerbose ? ['run', 'setup'] : ['run', 'setup', '--silent'];
     
     const npm = spawn('npm', npmArgs, {
       cwd: demoDir,
