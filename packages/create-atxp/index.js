@@ -2,8 +2,14 @@
 
 import { spawn } from 'child_process';
 
-// Call the atxp package with --create flag
-const atxp = spawn('npx', ['atxp', '--create'], {
+// Get arguments passed to create-atxp (excluding node and script name)
+const args = process.argv.slice(2);
+
+// Build the command: npx atxp create <args>
+const atxpArgs = ['atxp', 'create', ...args];
+
+// Call the atxp package with create command and pass through all arguments
+const atxp = spawn('npx', atxpArgs, {
   stdio: 'inherit',
   cwd: process.cwd()
 });
