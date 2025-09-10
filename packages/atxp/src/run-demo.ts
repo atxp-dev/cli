@@ -2,7 +2,6 @@ import chalk from 'chalk';
 import { spawn } from 'child_process';
 import fs from 'fs-extra';
 import open from 'open';
-import path from 'path';
 
 interface DemoOptions {
   port: number;
