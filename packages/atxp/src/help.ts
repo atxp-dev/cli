@@ -27,6 +27,8 @@ export function showHelp(): void {
   
   console.log(chalk.bold('Create Options:'));
   console.log('  ' + chalk.yellow('--framework, -f') + '     ' + 'Specify framework template (default: express)');
+  console.log('  ' + chalk.yellow('--git') + '               ' + 'Force git initialization');
+  console.log('  ' + chalk.yellow('--no-git') + '            ' + 'Skip git initialization');
   
   console.log(chalk.bold('Examples:'));
   console.log('  npx atxp demo                          # Run the demo with defaults (frontend: 8016, backend: 8017)');
@@ -36,8 +38,10 @@ export function showHelp(): void {
   console.log('  npx atxp demo --dir ./my-demo          # Use custom demo directory');
   console.log('  npx atxp demo --frontend-port 4000 --backend-port 4001 # Custom ports');
   console.log('  npx atxp demo --dir ./my-demo --frontend-port 4000     # Custom directory and port');
-  console.log('  npx atxp create my-app                 # Create new project named "my-app"');
+  console.log('  npx atxp create my-app                 # Create new project (auto-detect git)');
   console.log('  npx atxp create my-app --framework express # Create with Express framework');
+  console.log('  npx atxp create my-app --no-git        # Create without git initialization');
+  console.log('  npx atxp create my-app --git           # Force git initialization');
   console.log('  npm create atxp my-app                 # Create project using npm create');
   console.log();
   

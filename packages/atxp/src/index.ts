@@ -17,6 +17,7 @@ interface DemoOptions {
 interface CreateOptions {
   framework?: Framework;
   appName?: string;
+  git?: 'git' | 'no-git';
 }
 
 // Parse command line arguments
@@ -58,6 +59,14 @@ function parseArgs(): { command: string; demoOptions: DemoOptions; createOptions
   // Parse create options
   const framework = getArgValue('--framework', '-f') as Framework | undefined;
   
+  // Parse git options
+  let git: 'git' | 'no-git' | undefined;
+  if (process.argv.includes('--git')) {
+    git = 'git';
+  } else if (process.argv.includes('--no-git')) {
+    git = 'no-git';
+  }
+  
   // Handle app name for different invocation methods
   let appName: string | undefined;
   if (command === 'create') {
@@ -73,7 +82,7 @@ function parseArgs(): { command: string; demoOptions: DemoOptions; createOptions
   return {
     command,
     demoOptions: { port, dir, verbose, refresh },
-    createOptions: { framework, appName }
+    createOptions: { framework, appName, git }
   };
 }
 
@@ -111,7 +120,7 @@ async function main() {
       process.exit(1);
     }
     
-    createProject(appName, framework);
+    createProject(appName, framework, createOptions.git);
   } else if (command === 'demo') {
     console.log('Starting ATXP demo...');
     const dependenciesOk = await checkAllDependencies('demo');

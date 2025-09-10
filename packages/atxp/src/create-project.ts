@@ -6,8 +6,15 @@ import { spawn } from 'child_process';
 
 export type Framework = 'express';
 
-interface ProjectAnswers {
-  initGit: boolean;
+// Utility function to check if git is available
+async function isGitAvailable(): Promise<boolean> {
+  try {
+    const { execSync } = await import('child_process');
+    execSync('git --version', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 interface PackageJson {
@@ -28,7 +35,7 @@ const TEMPLATES: Record<Framework, { url: string; humanText: string }> = {
   // }
 };
 
-export async function createProject(appName: string, framework: Framework): Promise<void> {
+export async function createProject(appName: string, framework: Framework, gitOption?: 'git' | 'no-git'): Promise<void> {
   try {
     // Validate app name
     if (!appName.trim()) {
@@ -40,17 +47,21 @@ export async function createProject(appName: string, framework: Framework): Prom
       process.exit(1);
     }
 
-    // Get project details from user
-    const answers = await inquirer.prompt<ProjectAnswers>([
-      {
-        type: 'confirm',
-        name: 'initGit',
-        message: 'Initialize git repository?',
-        default: true
+    // Determine git initialization preference
+    let initGit: boolean;
+    if (gitOption === 'git') {
+      initGit = true;
+    } else if (gitOption === 'no-git') {
+      initGit = false;
+    } else {
+      // Smart default: use git if available
+      initGit = await isGitAvailable();
+      if (initGit) {
+        console.log(chalk.blue('Git detected - will initialize git repository (use --no-git to skip)'));
+      } else {
+        console.log(chalk.yellow('Git not found - skipping git initialization (install git or use --git to force)'));
       }
-    ]);
-
-    const { initGit } = answers;
+    }
     const projectPath = path.resolve(process.cwd(), appName);
 
     // Check if directory already exists
