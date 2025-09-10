@@ -33,9 +33,6 @@ export async function runDemo(options: DemoOptions): Promise<void> {
     // Install dependencies if needed
     await installDependencies(options.dir, options.verbose);
 
-    // Create .env files for configuration
-    await createEnvFiles(options.dir, options.port, options.verbose);
-
     // Start the demo and open browser
     await startDemo(options.port, options.dir, options.verbose);
 
@@ -254,26 +251,6 @@ async function startDemo(port: number, demoDir: string, isVerbose: boolean): Pro
   });
 }
 
-async function createEnvFiles(demoDir: string, port: number, isVerbose: boolean): Promise<void> {
-  if (isVerbose) {
-    console.log(chalk.blue('Creating .env file...'));
-  }
-  
-  try {
-    // Create .env file for the server
-    const envPath = path.join(demoDir, '.env');
-    const envContent = `PORT=${port}\n`;
-    await fs.writeFile(envPath, envContent);
-    
-    if (isVerbose) {
-      console.log(chalk.gray(`Created .env: ${envPath}`));
-    }
-    
-  } catch (error) {
-    console.log(chalk.yellow(`Warning: Could not create .env file: ${(error as Error).message}`));
-    console.log(chalk.gray('Demo will use environment variables passed directly'));
-  }
-}
 
 async function cleanup(): Promise<void> {
   try {
