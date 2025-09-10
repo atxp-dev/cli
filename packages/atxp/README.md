@@ -21,7 +21,7 @@ npx atxp
 # Run the interactive demo
 npx atxp demo
 
-# Create a new project
+# Create a new project (requires app name)
 npx atxp create my-app
 ```
 
@@ -36,7 +36,7 @@ Runs the interactive ATXP demo application.
 **Options:**
 - `--verbose, -v` - Show detailed logs
 - `--refresh` - Force refresh demo from GitHub
-- `--port, -p` - Specify port number (default: 8016)
+- `--port, -p` - Specify port number (default: 8017)
 - `--dir, -d` - Specify demo directory (default: ~/.cache/atxp/demo)
 
 **Examples:**
@@ -49,13 +49,30 @@ npx atxp demo --port 3000 --dir ./my-demo --verbose
 npx atxp demo --refresh
 ```
 
-### `npx atxp create [project-name]`
+### `npx atxp create <app-name> [options]`
 Creates a new ATXP project with the specified name.
+
+**Options:**
+- `--framework, -f` - Specify framework template (default: express)
+- `--git` - Force git initialization
+- `--no-git` - Skip git initialization
 
 **Examples:**
 ```bash
+# Basic usage (auto-detects git)
 npx atxp create my-app
-npx atxp create my-agent-project
+
+# With specific framework  
+npx atxp create my-app --framework express
+
+# Skip git initialization
+npx atxp create my-app --no-git
+
+# Force git initialization
+npx atxp create my-app --git
+
+# Alternative using npm create
+npm create atxp my-app
 ```
 
 ### `npx atxp help`

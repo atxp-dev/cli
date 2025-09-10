@@ -21,14 +21,19 @@ This monorepo contains:
 
 - `npx atxp` - Show help and available commands
 - `npx atxp demo` - Run the interactive demo application
-- `npx atxp create` - Create a new ATXP project
+- `npx atxp create <app-name>` - Create a new ATXP project
 - `npx atxp help` - Display help information
 
 ### Demo Options
 - `--verbose, -v` - Show detailed logs
 - `--refresh` - Force refresh demo from GitHub
-- `--port, -p` - Specify port number (default: 8016)
+- `--port, -p` - Specify port number (default: 8017)
 - `--dir, -d` - Specify demo directory (default: ~/.cache/atxp/demo)
+
+### Create Options
+- `--framework, -f` - Specify framework template (default: express)
+- `--git` - Force git initialization
+- `--no-git` - Skip git initialization
 
 ## Examples
 
@@ -61,10 +66,19 @@ npx atxp demo --refresh
 
 ### Create a New Project
 ```bash
-# Create a new project
+# Create a new project (auto-detects git)
 npx atxp create my-app
 
-# Alternative method
+# Create with specific framework
+npx atxp create my-app --framework express
+
+# Skip git initialization
+npx atxp create my-app --no-git
+
+# Force git initialization
+npx atxp create my-app --git
+
+# Alternative method using npm create
 npm create atxp my-app
 
 # Set up the project
