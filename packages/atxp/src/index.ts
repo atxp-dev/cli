@@ -23,6 +23,15 @@ interface CreateOptions {
 function parseArgs(): { command: string; demoOptions: DemoOptions; createOptions: CreateOptions } {
   const command = process.argv[2];
   
+  // Check for help flags early
+  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+    return {
+      command: 'help',
+      demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
+      createOptions: {}
+    };
+  }
+  
   // Parse demo options
   const getArgValue = (flag: string, shortFlag: string): string | undefined => {
     const index = process.argv.findIndex(arg => arg === flag || arg === shortFlag);
