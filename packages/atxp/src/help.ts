@@ -7,12 +7,14 @@ export function showHelp(): void {
   
   console.log(chalk.bold('Usage:'));
   console.log('  npx atxp <command> [options]');
+  console.log('  npx atxp create <app-name> [options]');
+  console.log('  npm create atxp <app-name> [options]');
   console.log();
   
   console.log(chalk.bold('Commands:'));
-  console.log('  ' + chalk.cyan('demo') + '     ' + 'Run the ATXP demo application');
-  console.log('  ' + chalk.cyan('create') + '   ' + 'Create a new ATXP project');
-  console.log('  ' + chalk.cyan('help') + '     ' + 'Show this help message');
+  console.log('  ' + chalk.cyan('demo') + '      ' + 'Run the ATXP demo application');
+  console.log('  ' + chalk.cyan('create') + ' ' + chalk.yellow('<app-name>') + ' ' + 'Create a new ATXP project');
+  console.log('  ' + chalk.cyan('help') + '      ' + 'Show this help message');
   console.log();
   
   console.log(chalk.bold('Demo Options:'));
@@ -23,6 +25,11 @@ export function showHelp(): void {
   console.log('  ' + chalk.yellow('--dir, -d') + '          ' + 'Specify demo directory (default: ~/.cache/atxp/demo)');
   console.log();
   
+  console.log(chalk.bold('Create Options:'));
+  console.log('  ' + chalk.yellow('--framework, -f') + '     ' + 'Specify framework template (default: express)');
+  console.log('  ' + chalk.yellow('--git') + '               ' + 'Force git initialization');
+  console.log('  ' + chalk.yellow('--no-git') + '            ' + 'Skip git initialization');
+  
   console.log(chalk.bold('Examples:'));
   console.log('  npx atxp demo                          # Run the demo with defaults (frontend: 8016, backend: 8017)');
   console.log('  npx atxp demo --verbose                # Run demo with detailed logs');
@@ -31,7 +38,11 @@ export function showHelp(): void {
   console.log('  npx atxp demo --dir ./my-demo          # Use custom demo directory');
   console.log('  npx atxp demo --frontend-port 4000 --backend-port 4001 # Custom ports');
   console.log('  npx atxp demo --dir ./my-demo --frontend-port 4000     # Custom directory and port');
-  console.log('  npx atxp create                        # Create a new project');
+  console.log('  npx atxp create my-app                 # Create new project (auto-detect git)');
+  console.log('  npx atxp create my-app --framework express # Create with Express framework');
+  console.log('  npx atxp create my-app --no-git        # Create without git initialization');
+  console.log('  npx atxp create my-app --git           # Force git initialization');
+  console.log('  npm create atxp my-app                 # Create project using npm create');
   console.log();
   
   console.log(chalk.bold('Learn more:'));

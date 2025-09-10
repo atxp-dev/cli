@@ -2,7 +2,7 @@
 
 import path from 'path';
 import os from 'os';
-import { createProject } from './create-project.js';
+import { createProject, type Framework } from './create-project.js';
 import { runDemo } from './run-demo.js';
 import { showHelp } from './help.js';
 import { checkAllDependencies, showDependencyError } from './check-dependencies.js';
@@ -14,9 +14,24 @@ interface DemoOptions {
   refresh: boolean;
 }
 
+interface CreateOptions {
+  framework?: Framework;
+  appName?: string;
+  git?: 'git' | 'no-git';
+}
+
 // Parse command line arguments
-function parseArgs(): { command: string; demoOptions: DemoOptions } {
+function parseArgs(): { command: string; demoOptions: DemoOptions; createOptions: CreateOptions } {
   const command = process.argv[2];
+  
+  // Check for help flags early
+  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+    return {
+      command: 'help',
+      demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
+      createOptions: { framework: undefined, appName: undefined, git: undefined }
+    };
+  }
   
   // Parse demo options
   const getArgValue = (flag: string, shortFlag: string): string | undefined => {
@@ -41,13 +56,37 @@ function parseArgs(): { command: string; demoOptions: DemoOptions } {
   const verbose = process.argv.includes('--verbose') || process.argv.includes('-v');
   const refresh = process.argv.includes('--refresh');
   
+  // Parse create options
+  const framework = getArgValue('--framework', '-f') as Framework | undefined;
+  
+  // Parse git options
+  let git: 'git' | 'no-git' | undefined;
+  if (process.argv.includes('--git')) {
+    git = 'git';
+  } else if (process.argv.includes('--no-git')) {
+    git = 'no-git';
+  }
+  
+  // Handle app name for different invocation methods
+  let appName: string | undefined;
+  if (command === 'create') {
+    // npx atxp create <app-name>
+    appName = process.argv[3];
+  } else if (process.env.npm_config_argv?.includes('create')) {
+    // npm create atxp <app-name> 
+    // The app name is typically the last argument in this case
+    const args = process.argv.slice(2);
+    appName = args.find(arg => !arg.startsWith('-') && arg !== 'create');
+  }
+  
   return {
     command,
-    demoOptions: { port, dir, verbose, refresh }
+    demoOptions: { port, dir, verbose, refresh },
+    createOptions: { framework, appName, git }
   };
 }
 
-const { command, demoOptions } = parseArgs();
+const { command, demoOptions, createOptions } = parseArgs();
 
 // Detect if we're in create mode (npm create atxp or npx atxp create)
 const isCreateMode = process.env.npm_config_argv?.includes('create') || 
@@ -63,7 +102,25 @@ async function main() {
       showDependencyError('create');
       process.exit(1);
     }
-    createProject();
+    
+    // Validate required parameters
+    const appName = createOptions.appName;
+    if (!appName) {
+      console.error('Error: App name is required');
+      console.log('Usage: npx atxp create <app-name> [--framework express]');
+      process.exit(1);
+    }
+    
+    const framework: Framework = createOptions.framework || 'express';
+    
+    // Validate framework
+    const validFrameworks: Framework[] = ['express'];
+    if (createOptions.framework && !validFrameworks.includes(createOptions.framework)) {
+      console.error(`Error: Unknown framework "${createOptions.framework}". Available frameworks: ${validFrameworks.join(', ')}`);
+      process.exit(1);
+    }
+    
+    createProject(appName, framework, createOptions.git);
   } else if (command === 'demo') {
     console.log('Starting ATXP demo...');
     const dependenciesOk = await checkAllDependencies('demo');

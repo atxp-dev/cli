@@ -1,13 +1,19 @@
-import inquirer from 'inquirer';
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
 import { spawn } from 'child_process';
 
-interface ProjectAnswers {
-  projectName: string;
-  template: 'agent';
-  initGit: boolean;
+export type Framework = 'express';
+
+// Utility function to check if git is available
+async function isGitAvailable(): Promise<boolean> {
+  try {
+    const { execSync } = await import('child_process');
+    execSync('git --version', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 interface PackageJson {
@@ -16,54 +22,50 @@ interface PackageJson {
 }
 
 // Template repositories
-const TEMPLATES = {
-  agent: {
-    url: 'https://github.com/atxp-dev/atxp-express-example.git',
-    humanText: 'Agent Demo (Full-stack web agent)'
+const TEMPLATES: Record<Framework, { url: string; humanText: string }> = {
+  express: {
+    url: 'https://github.com/atxp-dev/atxp-express-starter.git',
+    humanText: 'Express (Express.js starter template)'
   }
+  // Future frameworks can be added here
+  // vercel: {
+  //   url: 'https://github.com/atxp-dev/atxp-vercel-starter.git',
+  //   humanText: 'Vercel (Vercel.js starter template)'
+  // }
 };
 
-export async function createProject(): Promise<void> {
+export async function createProject(appName: string, framework: Framework, gitOption?: 'git' | 'no-git'): Promise<void> {
   try {
-    // Get project details from user
-    const answers = await inquirer.prompt<ProjectAnswers>([
-      {
-        type: 'input',
-        name: 'projectName',
-        message: 'What is your project named?',
-        default: 'my-atxp-app',
-        validate: (input: string) => {
-          if (!input.trim()) return 'Project name is required';
-          if (!/^[a-zA-Z0-9-_]+$/.test(input)) {
-            return 'Project name can only contain letters, numbers, hyphens, and underscores';
-          }
-          return true;
-        }
-      },
-      {
-        type: 'list',
-        name: 'template',
-        message: 'Choose a template:',
-        choices: Object.entries(TEMPLATES).map(([key, template]) => ({
-          name: template.humanText,
-          value: key
-        })),
-        default: 'agent'
-      },
-      {
-        type: 'confirm',
-        name: 'initGit',
-        message: 'Initialize git repository?',
-        default: true
-      }
-    ]);
+    // Validate app name
+    if (!appName.trim()) {
+      console.error(chalk.red('Project name is required'));
+      process.exit(1);
+    }
+    if (!/^[a-zA-Z0-9-_]+$/.test(appName)) {
+      console.error(chalk.red('Project name can only contain letters, numbers, hyphens, and underscores'));
+      process.exit(1);
+    }
 
-    const { projectName, template, initGit } = answers;
-    const projectPath = path.resolve(process.cwd(), projectName);
+    // Determine git initialization preference
+    let initGit: boolean;
+    if (gitOption === 'git') {
+      initGit = true;
+    } else if (gitOption === 'no-git') {
+      initGit = false;
+    } else {
+      // Smart default: use git if available
+      initGit = await isGitAvailable();
+      if (initGit) {
+        console.log(chalk.blue('Git detected - will initialize git repository (use --no-git to skip)'));
+      } else {
+        console.log(chalk.yellow('Git not found - skipping git initialization (install git or use --git to force)'));
+      }
+    }
+    const projectPath = path.resolve(process.cwd(), appName);
 
     // Check if directory already exists
     if (await fs.pathExists(projectPath)) {
-      console.error(chalk.red(`Directory "${projectName}" already exists`));
+      console.error(chalk.red(`Directory "${appName}" already exists`));
       process.exit(1);
     }
 
@@ -73,7 +75,7 @@ export async function createProject(): Promise<void> {
     await fs.ensureDir(projectPath);
 
     // Clone template from GitHub
-    await cloneTemplate(template, projectPath);
+    await cloneTemplate(framework, projectPath);
 
     // Copy .env file from env.example if it exists
     const envExamplePath = path.join(projectPath, 'env.example');
@@ -89,7 +91,7 @@ export async function createProject(): Promise<void> {
     const packageJsonPath = path.join(projectPath, 'package.json');
     if (await fs.pathExists(packageJsonPath)) {
       const packageJson = await fs.readJson(packageJsonPath) as PackageJson;
-      packageJson.name = projectName;
+      packageJson.name = appName;
       await fs.writeJson(packageJsonPath, packageJson, { spaces: 2 });
     }
 
@@ -112,7 +114,7 @@ export async function createProject(): Promise<void> {
 
     console.log(chalk.green('\nProject created successfully!'));
     console.log(chalk.blue('\nNext steps:'));
-    console.log(chalk.white(`  cd ${projectName}`));
+    console.log(chalk.white(`  cd ${appName}`));
     console.log(chalk.white('  npm install'));
     console.log(chalk.white('  npm start'));
     console.log(chalk.yellow('\nRemember to configure your environment variables in the .env file!'));
@@ -123,12 +125,8 @@ export async function createProject(): Promise<void> {
   }
 }
 
-async function cloneTemplate(template: string, projectPath: string): Promise<void> {
-  const templateConfig = TEMPLATES[template as keyof typeof TEMPLATES];
-  
-  if (!templateConfig) {
-    throw new Error(`Template "${template}" not found`);
-  }
+async function cloneTemplate(framework: Framework, projectPath: string): Promise<void> {
+  const templateConfig = TEMPLATES[framework];
 
   return new Promise((resolve, reject) => {
     console.log(chalk.blue('Downloading template from GitHub...'));
