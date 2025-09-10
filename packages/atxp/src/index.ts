@@ -29,7 +29,7 @@ function parseArgs(): { command: string; demoOptions: DemoOptions; createOptions
     return {
       command: 'help',
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
-      createOptions: {}
+      createOptions: { framework: undefined, appName: undefined, git: undefined }
     };
   }
   
