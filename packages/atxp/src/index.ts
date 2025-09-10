@@ -8,8 +8,7 @@ import { showHelp } from './help.js';
 import { checkAllDependencies, showDependencyError } from './check-dependencies.js';
 
 interface DemoOptions {
-  frontendPort: number;
-  backendPort: number;
+  port: number;
   dir: string;
   verbose: boolean;
   refresh: boolean;
@@ -25,22 +24,13 @@ function parseArgs(): { command: string; demoOptions: DemoOptions } {
     return index !== -1 ? process.argv[index + 1] : undefined;
   };
   
-  const frontendPort = (() => {
-    const portValue = getArgValue('--frontend-port', '--fp');
+  const port = (() => {
+    const portValue = getArgValue('--port', '-p');
     if (portValue) {
       const parsed = parseInt(portValue, 10);
       if (parsed > 0 && parsed < 65536) return parsed;
     }
-    return 8016; // default frontend port
-  })();
-  
-  const backendPort = (() => {
-    const portValue = getArgValue('--backend-port', '--bp');
-    if (portValue) {
-      const parsed = parseInt(portValue, 10);
-      if (parsed > 0 && parsed < 65536) return parsed;
-    }
-    return 8017; // default backend port
+    return 8017; // default port (previously backend port)
   })();
   
   const dir = (() => {
@@ -53,7 +43,7 @@ function parseArgs(): { command: string; demoOptions: DemoOptions } {
   
   return {
     command,
-    demoOptions: { frontendPort, backendPort, dir, verbose, refresh }
+    demoOptions: { port, dir, verbose, refresh }
   };
 }
 

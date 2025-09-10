@@ -5,8 +5,7 @@ import open from 'open';
 import path from 'path';
 
 interface DemoOptions {
-  frontendPort: number;
-  backendPort: number;
+  port: number;
   dir: string;
   verbose: boolean;
   refresh: boolean;
@@ -34,11 +33,8 @@ export async function runDemo(options: DemoOptions): Promise<void> {
     // Install dependencies if needed
     await installDependencies(options.dir, options.verbose);
 
-    // Create .env files for configuration
-    await createEnvFiles(options.dir, options.frontendPort, options.backendPort, options.verbose);
-
     // Start the demo and open browser
-    await startDemo(options.frontendPort, options.backendPort, options.dir, options.verbose);
+    await startDemo(options.port, options.dir, options.verbose);
 
   } catch (error) {
     console.error(chalk.red('Error starting demo:'), (error as Error).message);
@@ -76,26 +72,50 @@ async function cloneDemoRepo(demoDir: string, isVerbose: boolean): Promise<void>
 
 async function updateDemoRepo(demoDir: string, isVerbose: boolean): Promise<void> {
   return new Promise((resolve, _reject) => {
-    const git = spawn('git', [
-      'pull', 
-      '--depth', '1',           // Keep shallow history during pull
-      'origin', 'main'          // Explicitly pull from main branch
+    // First fetch the latest changes
+    const fetch = spawn('git', [
+      'fetch', 
+      '--depth', '1',           // Keep shallow history during fetch
+      'origin', 'main'          // Explicitly fetch from main branch
     ], {
       cwd: demoDir,
       stdio: isVerbose ? 'inherit' : 'pipe'
     });
 
-    git.on('close', (code) => {
-      if (code === 0) {
-        console.log(chalk.green('Demo updated successfully'));
+    fetch.on('close', (fetchCode) => {
+      if (fetchCode !== 0) {
+        console.log(chalk.yellow('Could not fetch updates, using existing version'));
         resolve();
-      } else {
+        return;
+      }
+
+      // Reset local branch to match remote exactly (discarding any local changes)
+      const reset = spawn('git', [
+        'reset', 
+        '--hard',               // Discard local changes
+        'origin/main'           // Reset to remote main branch
+      ], {
+        cwd: demoDir,
+        stdio: isVerbose ? 'inherit' : 'pipe'
+      });
+
+      reset.on('close', (resetCode) => {
+        if (resetCode === 0) {
+          console.log(chalk.green('Demo updated successfully'));
+          resolve();
+        } else {
+          console.log(chalk.yellow('Could not update demo, using existing version'));
+          resolve(); // Don't fail if update fails
+        }
+      });
+
+      reset.on('error', (_error) => {
         console.log(chalk.yellow('Could not update demo, using existing version'));
         resolve(); // Don't fail if update fails
-      }
+      });
     });
 
-    git.on('error', (_error) => {
+    fetch.on('error', (_error) => {
       console.log(chalk.yellow('Could not update demo, using existing version'));
       resolve(); // Don't fail if update fails
     });
@@ -107,7 +127,7 @@ async function installDependencies(demoDir: string, isVerbose: boolean): Promise
   
   return new Promise((resolve, reject) => {
     // Use --silent flag to reduce npm output
-    const npmArgs = isVerbose ? ['run', 'install-all'] : ['run', 'install-all', '--silent'];
+    const npmArgs = isVerbose ? ['run', 'setup'] : ['run', 'setup', '--silent'];
     
     const npm = spawn('npm', npmArgs, {
       cwd: demoDir,
@@ -129,9 +149,9 @@ async function installDependencies(demoDir: string, isVerbose: boolean): Promise
   });
 }
 
-async function startDemo(frontendPort: number, backendPort: number, demoDir: string, isVerbose: boolean): Promise<void> {
+async function startDemo(port: number, demoDir: string, isVerbose: boolean): Promise<void> {
   console.log(chalk.blue('Starting demo application...'));
-  console.log(chalk.green(`Demo will be available at: http://localhost:${frontendPort}`));
+  console.log(chalk.green(`Demo will be available at: http://localhost:${port}`));
   console.log(chalk.gray(`Demo directory: ${demoDir}`));
   console.log(chalk.yellow('Press Ctrl+C to stop the demo'));
   if (!isVerbose) {
@@ -142,11 +162,8 @@ async function startDemo(frontendPort: number, backendPort: number, demoDir: str
     // Set the port environment variable for the demo
     const env = { 
       ...process.env, 
-      // Backend will use PORT from its .env file, frontend will use PORT from its .env file
-      // We don't set PORT globally to avoid conflicts - let each service read its own .env
-      FRONTEND_PORT: frontendPort.toString(),
-      BACKEND_PORT: backendPort.toString(),
-      REACT_APP_BACKEND_PORT: backendPort.toString(),
+      // Server will use PORT from its .env file
+      PORT: port.toString(),
       NODE_ENV: 'production',
       // Suppress deprecation warnings
       NODE_NO_WARNINGS: '1',
@@ -200,10 +217,10 @@ async function startDemo(frontendPort: number, backendPort: number, demoDir: str
       if (!demoOpenedBrowser) {
         try {
           console.log(chalk.blue('Opening browser...'));
-          await open(`http://localhost:${frontendPort}`);
+          await open(`http://localhost:${port}`);
         } catch {
           console.log(chalk.yellow('Could not open browser automatically'));
-          console.log(chalk.white(`Please open http://localhost:${frontendPort} in your browser`));
+          console.log(chalk.white(`Please open http://localhost:${port} in your browser`));
         }
       }
     }, 2000);
@@ -234,35 +251,6 @@ async function startDemo(frontendPort: number, backendPort: number, demoDir: str
   });
 }
 
-async function createEnvFiles(demoDir: string, frontendPort: number, backendPort: number, isVerbose: boolean): Promise<void> {
-  if (isVerbose) {
-    console.log(chalk.blue('Creating .env files...'));
-  }
-  
-  try {
-    // Create backend .env file
-    const backendEnvPath = path.join(demoDir, 'backend', '.env');
-    const backendEnvContent = `PORT=${backendPort}\nFRONTEND_PORT=${frontendPort}\n`;
-    await fs.writeFile(backendEnvPath, backendEnvContent);
-    
-    if (isVerbose) {
-      console.log(chalk.gray(`Created backend .env: ${backendEnvPath}`));
-    }
-    
-    // Create frontend .env file
-    const frontendEnvPath = path.join(demoDir, 'frontend', '.env');
-    const frontendEnvContent = `PORT=${frontendPort}\nREACT_APP_BACKEND_PORT=${backendPort}\n`;
-    await fs.writeFile(frontendEnvPath, frontendEnvContent);
-    
-    if (isVerbose) {
-      console.log(chalk.gray(`Created frontend .env: ${frontendEnvPath}`));
-    }
-    
-  } catch (error) {
-    console.log(chalk.yellow(`Warning: Could not create .env files: ${(error as Error).message}`));
-    console.log(chalk.gray('Demo will use environment variables passed directly'));
-  }
-}
 
 async function cleanup(): Promise<void> {
   try {
