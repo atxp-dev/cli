@@ -5,8 +5,7 @@ import open from 'open';
 import path from 'path';
 
 interface DemoOptions {
-  frontendPort: number;
-  backendPort: number;
+  port: number;
   dir: string;
   verbose: boolean;
   refresh: boolean;
@@ -35,10 +34,10 @@ export async function runDemo(options: DemoOptions): Promise<void> {
     await installDependencies(options.dir, options.verbose);
 
     // Create .env files for configuration
-    await createEnvFiles(options.dir, options.frontendPort, options.backendPort, options.verbose);
+    await createEnvFiles(options.dir, options.port, options.verbose);
 
     // Start the demo and open browser
-    await startDemo(options.frontendPort, options.backendPort, options.dir, options.verbose);
+    await startDemo(options.port, options.dir, options.verbose);
 
   } catch (error) {
     console.error(chalk.red('Error starting demo:'), (error as Error).message);
@@ -153,9 +152,9 @@ async function installDependencies(demoDir: string, isVerbose: boolean): Promise
   });
 }
 
-async function startDemo(frontendPort: number, backendPort: number, demoDir: string, isVerbose: boolean): Promise<void> {
+async function startDemo(port: number, demoDir: string, isVerbose: boolean): Promise<void> {
   console.log(chalk.blue('Starting demo application...'));
-  console.log(chalk.green(`Demo will be available at: http://localhost:${frontendPort}`));
+  console.log(chalk.green(`Demo will be available at: http://localhost:${port}`));
   console.log(chalk.gray(`Demo directory: ${demoDir}`));
   console.log(chalk.yellow('Press Ctrl+C to stop the demo'));
   if (!isVerbose) {
@@ -166,11 +165,8 @@ async function startDemo(frontendPort: number, backendPort: number, demoDir: str
     // Set the port environment variable for the demo
     const env = { 
       ...process.env, 
-      // Backend will use PORT from its .env file, frontend will use PORT from its .env file
-      // We don't set PORT globally to avoid conflicts - let each service read its own .env
-      FRONTEND_PORT: frontendPort.toString(),
-      BACKEND_PORT: backendPort.toString(),
-      REACT_APP_BACKEND_PORT: backendPort.toString(),
+      // Server will use PORT from its .env file
+      PORT: port.toString(),
       NODE_ENV: 'production',
       // Suppress deprecation warnings
       NODE_NO_WARNINGS: '1',
@@ -224,10 +220,10 @@ async function startDemo(frontendPort: number, backendPort: number, demoDir: str
       if (!demoOpenedBrowser) {
         try {
           console.log(chalk.blue('Opening browser...'));
-          await open(`http://localhost:${frontendPort}`);
+          await open(`http://localhost:${port}`);
         } catch {
           console.log(chalk.yellow('Could not open browser automatically'));
-          console.log(chalk.white(`Please open http://localhost:${frontendPort} in your browser`));
+          console.log(chalk.white(`Please open http://localhost:${port} in your browser`));
         }
       }
     }, 2000);
@@ -258,32 +254,23 @@ async function startDemo(frontendPort: number, backendPort: number, demoDir: str
   });
 }
 
-async function createEnvFiles(demoDir: string, frontendPort: number, backendPort: number, isVerbose: boolean): Promise<void> {
+async function createEnvFiles(demoDir: string, port: number, isVerbose: boolean): Promise<void> {
   if (isVerbose) {
-    console.log(chalk.blue('Creating .env files...'));
+    console.log(chalk.blue('Creating .env file...'));
   }
   
   try {
-    // Create backend .env file
-    const backendEnvPath = path.join(demoDir, 'backend', '.env');
-    const backendEnvContent = `PORT=${backendPort}\nFRONTEND_PORT=${frontendPort}\n`;
-    await fs.writeFile(backendEnvPath, backendEnvContent);
+    // Create .env file for the server
+    const envPath = path.join(demoDir, '.env');
+    const envContent = `PORT=${port}\n`;
+    await fs.writeFile(envPath, envContent);
     
     if (isVerbose) {
-      console.log(chalk.gray(`Created backend .env: ${backendEnvPath}`));
-    }
-    
-    // Create frontend .env file
-    const frontendEnvPath = path.join(demoDir, 'frontend', '.env');
-    const frontendEnvContent = `PORT=${frontendPort}\nREACT_APP_BACKEND_PORT=${backendPort}\n`;
-    await fs.writeFile(frontendEnvPath, frontendEnvContent);
-    
-    if (isVerbose) {
-      console.log(chalk.gray(`Created frontend .env: ${frontendEnvPath}`));
+      console.log(chalk.gray(`Created .env: ${envPath}`));
     }
     
   } catch (error) {
-    console.log(chalk.yellow(`Warning: Could not create .env files: ${(error as Error).message}`));
+    console.log(chalk.yellow(`Warning: Could not create .env file: ${(error as Error).message}`));
     console.log(chalk.gray('Demo will use environment variables passed directly'));
   }
 }
