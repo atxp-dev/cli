@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
 import { spawn } from 'child_process';
+import inquirer from 'inquirer';
 
 export type Framework = 'express';
 
@@ -14,6 +15,120 @@ async function isGitAvailable(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+// Parse environment variables from .env content
+export function parseEnvFile(content: string): Array<{ key: string; value: string; comment?: string }> {
+  const lines = content.split('\n');
+  const envVars: Array<{ key: string; value: string; comment?: string }> = [];
+  let pendingComment: string | undefined;
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    
+    // Skip empty lines
+    if (!trimmed) {
+      pendingComment = undefined;
+      continue;
+    }
+    
+    // Capture comments
+    if (trimmed.startsWith('#')) {
+      // Extract comment text, removing the # and any extra spaces/trailing ###
+      const commentText = trimmed.replace(/^#+\s*/, '').replace(/\s*#+\s*$/, '').trim();
+      if (commentText) {
+        pendingComment = commentText;
+      }
+      continue;
+    }
+    
+    // Look for key=value pairs
+    const match = trimmed.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
+    if (match) {
+      const [, key, value] = match;
+      
+      // Check if the value looks like a placeholder
+      const isPlaceholder = value === '' || 
+                           value.includes('your_') || 
+                           value.includes('YOUR_') || 
+                           value.includes('<') || 
+                           value.includes('TODO') ||
+                           value.includes('REPLACE') ||
+                           value === 'changeme' ||
+                           (value.startsWith('"') && value.endsWith('"') && 
+                            (value.includes('your_') || value.includes('YOUR_') || value === '""'));
+      
+      if (isPlaceholder) {
+        envVars.push({ 
+          key, 
+          value, 
+          comment: pendingComment || `Configuration value for ${key}`
+        });
+      }
+      
+      // Reset pending comment after processing a variable
+      pendingComment = undefined;
+    }
+  }
+  
+  return envVars;
+}
+
+// Interactive environment variable configuration
+async function configureEnvironmentVariables(envPath: string): Promise<void> {
+  const envContent = await fs.readFile(envPath, 'utf-8');
+  const envVars = parseEnvFile(envContent);
+  
+  if (envVars.length === 0) {
+    console.log(chalk.green('Environment file looks good - no configuration needed'));
+    return;
+  }
+  
+  console.log(chalk.blue('\n🔧 Environment Configuration'));
+  console.log(chalk.gray('The template includes environment variables that need configuration.'));
+  
+  const { shouldConfigure } = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'shouldConfigure',
+      message: 'Would you like to configure environment variables now?',
+      default: true
+    }
+  ]);
+  
+  if (!shouldConfigure) {
+    console.log(chalk.yellow('Skipped environment configuration. Remember to update your .env file before running the project!'));
+    return;
+  }
+  
+  console.log(chalk.gray('You can skip any variable by pressing Enter to keep the placeholder.\n'));
+  console.log(chalk.gray('Clear the default text to set a variable to empty.\n'));
+  
+  const updatedVars: Record<string, string> = {};
+  
+  for (const envVar of envVars) {
+    const { value } = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'value',
+        message: `${envVar.key} (${envVar.comment}):`,
+        default: envVar.value
+      }
+    ]);
+    
+    // Use the value as-is. If user cleared the input, value will be empty string
+    updatedVars[envVar.key] = value;
+  }
+  
+  // Update the .env file with new values
+  let updatedContent = envContent;
+  for (const [key, value] of Object.entries(updatedVars)) {
+    const regex = new RegExp(`^${key}=.*$`, 'm');
+    updatedContent = updatedContent.replace(regex, `${key}=${value}`);
+  }
+  
+  await fs.writeFile(envPath, updatedContent);
+  console.log(chalk.green('✅ Environment variables configured successfully!'));
 }
 
 interface PackageJson {
@@ -77,14 +192,15 @@ export async function createProject(appName: string, framework: Framework, gitOp
     // Clone template from GitHub
     await cloneTemplate(framework, projectPath);
 
-    // Copy .env file from env.example if it exists
+    // Copy .env file from env.example if it exists and configure it interactively
     const envExamplePath = path.join(projectPath, 'env.example');
     const envPath = path.join(projectPath, '.env');
     if (await fs.pathExists(envExamplePath)) {
       await fs.copy(envExamplePath, envPath);
       console.log(chalk.green('Environment file created from template'));
-    } else {
-      console.log(chalk.yellow('No env.example found in template'));
+      
+      // Configure environment variables interactively
+      await configureEnvironmentVariables(envPath);
     }
 
     // Update package.json with project name
@@ -117,7 +233,11 @@ export async function createProject(appName: string, framework: Framework, gitOp
     console.log(chalk.white(`  cd ${appName}`));
     console.log(chalk.white('  npm install'));
     console.log(chalk.white('  npm start'));
-    console.log(chalk.yellow('\nRemember to configure your environment variables in the .env file!'));
+    
+    // Only show env reminder if there is an .env file that exists
+    if (await fs.pathExists(envPath)) {
+      console.log(chalk.yellow('\nRemember to configure your environment variables in the .env file!'));
+    }
 
   } catch (error) {
     console.error(chalk.red('Error creating project:'), (error as Error).message);
