@@ -149,6 +149,34 @@ const TEMPLATES: Record<Framework, { url: string; humanText: string }> = {
   // }
 };
 
+// Find env.example file in project directory or one level of subdirectories
+async function findEnvExample(projectPath: string): Promise<string | null> {
+  // Check root directory first
+  const rootEnvExample = path.join(projectPath, 'env.example');
+  if (await fs.pathExists(rootEnvExample)) {
+    return rootEnvExample;
+  }
+
+  // Check subdirectories (max depth 1)
+  try {
+    const entries = await fs.readdir(projectPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const subDirEnvExample = path.join(projectPath, entry.name, 'env.example');
+        if (await fs.pathExists(subDirEnvExample)) {
+          return subDirEnvExample;
+        }
+      }
+    }
+  } catch {
+    // If we can't read the directory, just return null
+    console.warn(chalk.yellow('Could not search for env.example files'));
+  }
+
+  return null;
+}
+
 export async function createProject(appName: string, framework: Framework, gitOption?: 'git' | 'no-git'): Promise<void> {
   try {
     // Validate app name
@@ -193,14 +221,21 @@ export async function createProject(appName: string, framework: Framework, gitOp
     await cloneTemplate(framework, projectPath);
 
     // Copy .env file from env.example if it exists and configure it interactively
-    const envExamplePath = path.join(projectPath, 'env.example');
-    const envPath = path.join(projectPath, '.env');
-    if (await fs.pathExists(envExamplePath)) {
+    // Search for env.example in project root and one level of subdirectories
+    const envExamplePath = await findEnvExample(projectPath);
+    let createdEnvPath: string | null = null;
+
+    if (envExamplePath) {
+      const envDir = path.dirname(envExamplePath);
+      const envPath = path.join(envDir, '.env');
+
       await fs.copy(envExamplePath, envPath);
       console.log(chalk.green('Environment file created from template'));
-      
+
       // Configure environment variables interactively
       await configureEnvironmentVariables(envPath);
+
+      createdEnvPath = envPath;
     }
 
     // Update package.json with project name
@@ -231,11 +266,11 @@ export async function createProject(appName: string, framework: Framework, gitOp
     console.log(chalk.green('\nProject created successfully!'));
     console.log(chalk.blue('\nNext steps:'));
     console.log(chalk.white(`  cd ${appName}`));
-    console.log(chalk.white('  npm install'));
+    console.log(chalk.white('  npm run install-all'));
     console.log(chalk.white('  npm start'));
     
     // Only show env reminder if there is an .env file that exists
-    if (await fs.pathExists(envPath)) {
+    if (createdEnvPath && await fs.pathExists(createdEnvPath)) {
       console.log(chalk.yellow('\nRemember to configure your environment variables in the .env file!'));
     }
 
