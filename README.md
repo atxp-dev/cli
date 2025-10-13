@@ -31,7 +31,7 @@ This monorepo contains:
 - `--dir, -d` - Specify demo directory (default: ~/.cache/atxp/demo)
 
 ### Create Options
-- `--framework, -f` - Specify framework template (default: express)
+- `--framework, -f` - Specify framework template (options: express, cloudflare; default: express)
 - `--git` - Force git initialization
 - `--no-git` - Skip git initialization
 
@@ -66,11 +66,14 @@ npx atxp demo --refresh
 
 ### Create a New Project
 ```bash
-# Create a new project (auto-detects git)
+# Create a new Express project (auto-detects git)
 npx atxp create my-app
 
-# Create with specific framework
+# Create with Express framework (default)
 npx atxp create my-app --framework express
+
+# Create with Cloudflare Workers framework
+npx atxp create my-app --framework cloudflare
 
 # Skip git initialization
 npx atxp create my-app --no-git
@@ -84,7 +87,9 @@ npm create atxp my-app
 # Set up the project
 cd my-app
 npm install
-npm start
+npm start  # For Express projects
+# or
+npm start  # For Cloudflare projects (runs vite dev)
 ```
 
 ## Development

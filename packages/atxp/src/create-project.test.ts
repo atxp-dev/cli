@@ -32,13 +32,17 @@ describe('createProject', () => {
 
   describe('Framework type', () => {
     it('should have correct framework types', () => {
-      const validFramework: Framework = 'express';
-      expect(validFramework).toBe('express');
-      
+      const expressFramework: Framework = 'express';
+      expect(expressFramework).toBe('express');
+
+      const cloudflareFramework: Framework = 'cloudflare';
+      expect(cloudflareFramework).toBe('cloudflare');
+
       // Test that the type system prevents invalid frameworks
       // This is compile-time validation, but we can test the concept
-      const frameworks = ['express'] as const;
+      const frameworks = ['express', 'cloudflare'] as const;
       expect(frameworks).toContain('express');
+      expect(frameworks).toContain('cloudflare');
     });
   });
 

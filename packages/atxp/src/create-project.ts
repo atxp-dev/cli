@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { spawn } from 'child_process';
 import inquirer from 'inquirer';
 
-export type Framework = 'express';
+export type Framework = 'express' | 'cloudflare';
 
 // Utility function to check if git is available
 async function isGitAvailable(): Promise<boolean> {
@@ -141,6 +141,10 @@ const TEMPLATES: Record<Framework, { url: string; humanText: string }> = {
   express: {
     url: 'https://github.com/atxp-dev/atxp-express-starter.git',
     humanText: 'Express (Express.js starter template)'
+  },
+  cloudflare: {
+    url: 'https://github.com/atxp-dev/atxp-cloudflare-agent-example.git',
+    humanText: 'Cloudflare (Cloudflare Workers AI agent with ATXP integration)'
   }
   // Future frameworks can be added here
   // vercel: {
@@ -266,9 +270,16 @@ export async function createProject(appName: string, framework: Framework, gitOp
     console.log(chalk.green('\nProject created successfully!'));
     console.log(chalk.blue('\nNext steps:'));
     console.log(chalk.white(`  cd ${appName}`));
-    console.log(chalk.white('  npm run install-all'));
+
+    // Different installation instructions based on framework
+    if (framework === 'express') {
+      console.log(chalk.white('  npm run install-all'));
+    } else {
+      console.log(chalk.white('  npm install'));
+    }
+
     console.log(chalk.white('  npm start'));
-    
+
     // Only show env reminder if there is an .env file that exists
     if (createdEnvPath && await fs.pathExists(createdEnvPath)) {
       console.log(chalk.yellow('\nRemember to configure your environment variables in the .env file!'));

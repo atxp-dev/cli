@@ -114,7 +114,7 @@ async function main() {
     const framework: Framework = createOptions.framework || 'express';
     
     // Validate framework
-    const validFrameworks: Framework[] = ['express'];
+    const validFrameworks: Framework[] = ['express', 'cloudflare'];
     if (createOptions.framework && !validFrameworks.includes(createOptions.framework)) {
       console.error(`Error: Unknown framework "${createOptions.framework}". Available frameworks: ${validFrameworks.join(', ')}`);
       process.exit(1);
