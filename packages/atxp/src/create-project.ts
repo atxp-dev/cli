@@ -143,8 +143,8 @@ const TEMPLATES: Record<Framework, { url: string; humanText: string }> = {
     humanText: 'Express (Express.js starter template)'
   },
   cloudflare: {
-    url: 'https://github.com/atxp-dev/atxp-cloudflare-agent-example.git',
-    humanText: 'Cloudflare (Cloudflare Workers AI agent with ATXP integration)'
+    url: 'https://github.com/atxp-dev/atxp-cloudflare-chat-template',
+    humanText: 'Cloudflare (Cloudflare Chat agent with ATXP integration)'
   }
   // Future frameworks can be added here
   // vercel: {
