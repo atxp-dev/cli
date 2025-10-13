@@ -181,6 +181,34 @@ async function findEnvExample(projectPath: string): Promise<string | null> {
   return null;
 }
 
+// Find .dev.vars.example file in project directory or one level of subdirectories
+async function findDevVarsExample(projectPath: string): Promise<string | null> {
+  // Check root directory first
+  const rootDevVars = path.join(projectPath, '.dev.vars.example');
+  if (await fs.pathExists(rootDevVars)) {
+    return rootDevVars;
+  }
+
+  // Check subdirectories (max depth 1)
+  try {
+    const entries = await fs.readdir(projectPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const subDirDevVars = path.join(projectPath, entry.name, '.dev.vars.example');
+        if (await fs.pathExists(subDirDevVars)) {
+          return subDirDevVars;
+        }
+      }
+    }
+  } catch {
+    // If we can't read the directory, just return null
+    console.warn(chalk.yellow('Could not search for .dev.vars.example files'));
+  }
+
+  return null;
+}
+
 export async function createProject(appName: string, framework: Framework, gitOption?: 'git' | 'no-git'): Promise<void> {
   try {
     // Validate app name
@@ -224,22 +252,27 @@ export async function createProject(appName: string, framework: Framework, gitOp
     // Clone template from GitHub
     await cloneTemplate(framework, projectPath);
 
-    // Copy .env file from env.example if it exists and configure it interactively
-    // Search for env.example in project root and one level of subdirectories
+    // Copy configuration file from template if it exists and configure it interactively
+    // Search for .dev.vars.example or env.example in project root and one level of subdirectories
+    // Prioritize .dev.vars.example (used by Cloudflare) over env.example
+    const devVarsExamplePath = await findDevVarsExample(projectPath);
     const envExamplePath = await findEnvExample(projectPath);
-    let createdEnvPath: string | null = null;
+    let createdConfigPath: string | null = null;
 
-    if (envExamplePath) {
-      const envDir = path.dirname(envExamplePath);
-      const envPath = path.join(envDir, '.env');
+    const configSource = devVarsExamplePath || envExamplePath;
+    if (configSource) {
+      const configDir = path.dirname(configSource);
+      const isDevVars = configSource === devVarsExamplePath;
+      const configPath = path.join(configDir, isDevVars ? '.dev.vars' : '.env');
+      const configFileName = isDevVars ? '.dev.vars' : '.env';
 
-      await fs.copy(envExamplePath, envPath);
-      console.log(chalk.green('Environment file created from template'));
+      await fs.copy(configSource, configPath);
+      console.log(chalk.green(`${configFileName} file created from template`));
 
       // Configure environment variables interactively
-      await configureEnvironmentVariables(envPath);
+      await configureEnvironmentVariables(configPath);
 
-      createdEnvPath = envPath;
+      createdConfigPath = configPath;
     }
 
     // Update package.json with project name
@@ -280,9 +313,10 @@ export async function createProject(appName: string, framework: Framework, gitOp
 
     console.log(chalk.white('  npm start'));
 
-    // Only show env reminder if there is an .env file that exists
-    if (createdEnvPath && await fs.pathExists(createdEnvPath)) {
-      console.log(chalk.yellow('\nRemember to configure your environment variables in the .env file!'));
+    // Only show config file reminder if a config file was created and exists
+    if (createdConfigPath && await fs.pathExists(createdConfigPath)) {
+      const configFileName = path.basename(createdConfigPath);
+      console.log(chalk.yellow(`\nRemember to configure your environment variables in the ${configFileName} file!`));
     }
 
   } catch (error) {
