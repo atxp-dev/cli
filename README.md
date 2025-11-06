@@ -75,6 +75,9 @@ npx atxp create my-app --framework express
 # Create with Cloudflare Workers framework
 npx atxp create my-app --framework cloudflare
 
+# Create a new Mastra project
+npx atxp create my-app --framework mastra
+
 # Skip git initialization
 npx atxp create my-app --no-git
 
