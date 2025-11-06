@@ -107,14 +107,20 @@ async function main() {
     const appName = createOptions.appName;
     if (!appName) {
       console.error('Error: App name is required');
-      console.log('Usage: npx atxp create <app-name> [--framework express]');
+      console.log('Usage: npx atxp create <app-name> [--framework express|cloudflare|mastra]');
       process.exit(1);
     }
     
+    // Special message for users passing the common typo/alias "mastra"
+    if ((createOptions.framework as unknown as string) === 'mastra') {
+      console.log('Mastra support coming soon. Join our Discord at https://discord.gg/FuJXHhe9aW to get notified when Mastra support is available.');
+      process.exit(0);
+    }
+
     const framework: Framework = createOptions.framework || 'express';
     
     // Validate framework
-    const validFrameworks: Framework[] = ['express', 'cloudflare'];
+    const validFrameworks: Framework[] = ['express', 'cloudflare', 'mastra'];
     if (createOptions.framework && !validFrameworks.includes(createOptions.framework)) {
       console.error(`Error: Unknown framework "${createOptions.framework}". Available frameworks: ${validFrameworks.join(', ')}`);
       process.exit(1);

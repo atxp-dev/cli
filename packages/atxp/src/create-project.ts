@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { spawn } from 'child_process';
 import inquirer from 'inquirer';
 
-export type Framework = 'express' | 'cloudflare';
+export type Framework = 'express' | 'cloudflare' | 'mastra';
 
 // Utility function to check if git is available
 async function isGitAvailable(): Promise<boolean> {
@@ -145,6 +145,10 @@ const TEMPLATES: Record<Framework, { url: string; humanText: string }> = {
   cloudflare: {
     url: 'https://github.com/atxp-dev/atxp-cloudflare-chat-template',
     humanText: 'Cloudflare (Cloudflare Chat agent with ATXP integration)'
+  },
+  mastra: {
+    url: 'https://github.com/atxp-dev/atxp-mastra-starter.git',
+    humanText: 'Mastra (Mastra.js starter template)'
   }
   // Future frameworks can be added here
   // vercel: {
