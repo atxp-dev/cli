@@ -2,7 +2,7 @@ import { callTool } from '../call-tool.js';
 import chalk from 'chalk';
 
 const SERVER = 'video.mcp.atxp.ai';
-const TOOL = 'generate_video';
+const TOOL = 'create_video';
 
 export async function videoCommand(prompt: string): Promise<void> {
   if (!prompt || prompt.trim().length === 0) {
