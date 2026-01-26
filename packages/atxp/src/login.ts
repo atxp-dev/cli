@@ -7,6 +7,7 @@ import open from 'open';
 
 interface LoginOptions {
   force?: boolean;
+  token?: string;
 }
 
 const CONFIG_DIR = path.join(os.homedir(), '.atxp');
@@ -16,7 +17,7 @@ export async function login(options: LoginOptions = {}): Promise<void> {
   // Check if already logged in
   const existingConnection = process.env.ATXP_CONNECTION;
 
-  if (existingConnection && !options.force) {
+  if (existingConnection && !options.force && !options.token) {
     console.log(chalk.yellow('Already logged in (ATXP_CONNECTION is set).'));
     console.log('Run with --force to update your connection string.');
     return;
@@ -26,7 +27,17 @@ export async function login(options: LoginOptions = {}): Promise<void> {
   console.log();
 
   try {
-    const connectionString = await loginWithBrowser();
+    let connectionString: string;
+
+    // If token provided directly, use it (headless mode)
+    if (options.token) {
+      connectionString = options.token;
+      console.log('Using provided token for headless authentication...');
+    } else {
+      // Otherwise, use browser-based login
+      connectionString = await loginWithBrowser();
+    }
+
     saveConnectionString(connectionString);
 
     console.log();
