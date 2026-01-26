@@ -2,49 +2,66 @@ import chalk from 'chalk';
 
 export function showHelp(): void {
   console.log(chalk.bold(chalk.blue('ATXP CLI')));
-  console.log(chalk.gray('Command line tool for creating ATXP projects and running demos'));
+  console.log(chalk.gray('Command line tool for ATXP tools and development'));
   console.log();
-  
+
   console.log(chalk.bold('Usage:'));
   console.log('  npx atxp <command> [options]');
-  console.log('  npx atxp create <app-name> [options]');
-  console.log('  npm create atxp <app-name> [options]');
   console.log();
-  
-  console.log(chalk.bold('Commands:'));
-  console.log('  ' + chalk.cyan('demo') + '      ' + 'Run the ATXP demo application');
-  console.log('  ' + chalk.cyan('create') + ' ' + chalk.yellow('<app-name>') + ' ' + 'Create a new ATXP project');
-  console.log('  ' + chalk.cyan('help') + '      ' + 'Show this help message');
+
+  console.log(chalk.bold('Authentication:'));
+  console.log('  ' + chalk.cyan('login') + '              ' + 'Log in to ATXP (save connection string)');
   console.log();
-  
-  console.log(chalk.bold('Demo Options:'));
-  console.log('  ' + chalk.yellow('--verbose, -v') + '       ' + 'Show detailed logs');
-  console.log('  ' + chalk.yellow('--refresh') + '           ' + 'Force refresh the demo from GitHub');
-  console.log('  ' + chalk.yellow('--frontend-port, --fp') + ' ' + 'Specify frontend port (default: 8016)');
-  console.log('  ' + chalk.yellow('--backend-port, --bp') + '  ' + 'Specify backend port (default: 8017)');
-  console.log('  ' + chalk.yellow('--dir, -d') + '          ' + 'Specify demo directory (default: ~/.cache/atxp/demo)');
+
+  console.log(chalk.bold('Tools:'));
+  console.log('  ' + chalk.cyan('search') + ' ' + chalk.yellow('<query>') + '    ' + 'Search the web');
+  console.log('  ' + chalk.cyan('image') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate an image');
+  console.log('  ' + chalk.cyan('music') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate music');
+  console.log('  ' + chalk.cyan('video') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate a video');
+  console.log('  ' + chalk.cyan('x') + ' ' + chalk.yellow('<query>') + '        ' + 'Search X/Twitter');
   console.log();
-  
-  console.log(chalk.bold('Create Options:'));
-  console.log('  ' + chalk.yellow('--framework, -f') + '     ' + 'Specify framework template (default: express)');
-  console.log('  ' + chalk.yellow('--git') + '               ' + 'Force git initialization');
-  console.log('  ' + chalk.yellow('--no-git') + '            ' + 'Skip git initialization');
-  
+
+  console.log(chalk.bold('Development:'));
+  console.log('  ' + chalk.cyan('dev demo') + '           ' + 'Run the ATXP demo application');
+  console.log(
+    '  ' + chalk.cyan('dev create') + ' ' + chalk.yellow('<app>') + '  ' + 'Create a new ATXP project'
+  );
+  console.log();
+
+  console.log(chalk.bold('Other:'));
+  console.log('  ' + chalk.cyan('help') + '               ' + 'Show this help message');
+  console.log();
+
+  console.log(chalk.bold('Login Options:'));
+  console.log('  ' + chalk.yellow('--force') + '            ' + 'Update connection string even if already set');
+  console.log();
+
+  console.log(chalk.bold('Dev Demo Options:'));
+  console.log('  ' + chalk.yellow('--verbose, -v') + '      ' + 'Show detailed logs');
+  console.log('  ' + chalk.yellow('--refresh') + '          ' + 'Force refresh the demo from GitHub');
+  console.log('  ' + chalk.yellow('--port, -p') + '         ' + 'Specify port (default: 8017)');
+  console.log('  ' + chalk.yellow('--dir, -d') + '          ' + 'Specify demo directory');
+  console.log();
+
+  console.log(chalk.bold('Dev Create Options:'));
+  console.log(
+    '  ' + chalk.yellow('--framework, -f') + '    ' + 'Specify framework (express, cloudflare)'
+  );
+  console.log('  ' + chalk.yellow('--git') + '              ' + 'Force git initialization');
+  console.log('  ' + chalk.yellow('--no-git') + '           ' + 'Skip git initialization');
+  console.log();
+
   console.log(chalk.bold('Examples:'));
-  console.log('  npx atxp demo                          # Run the demo with defaults (frontend: 8016, backend: 8017)');
-  console.log('  npx atxp demo --verbose                # Run demo with detailed logs');
-  console.log('  npx atxp demo --frontend-port 4000     # Run demo with frontend on port 4000');
-  console.log('  npx atxp demo --backend-port 4001      # Run demo with backend on port 4001');
-  console.log('  npx atxp demo --dir ./my-demo          # Use custom demo directory');
-  console.log('  npx atxp demo --frontend-port 4000 --backend-port 4001 # Custom ports');
-  console.log('  npx atxp demo --dir ./my-demo --frontend-port 4000     # Custom directory and port');
-  console.log('  npx atxp create my-app                 # Create new project (auto-detect git)');
-  console.log('  npx atxp create my-app --framework express # Create with Express framework');
-  console.log('  npx atxp create my-app --no-git        # Create without git initialization');
-  console.log('  npx atxp create my-app --git           # Force git initialization');
-  console.log('  npm create atxp my-app                 # Create project using npm create');
+  console.log('  npx atxp login                         # Log in to ATXP');
+  console.log('  npx atxp search "latest AI news"       # Search the web');
+  console.log('  npx atxp image "sunset over mountains" # Generate an image');
+  console.log('  npx atxp music "relaxing piano"        # Generate music');
+  console.log('  npx atxp video "ocean waves"           # Generate a video');
+  console.log('  npx atxp x "trending topics"           # Search X/Twitter');
+  console.log('  npx atxp dev demo                      # Run the demo');
+  console.log('  npx atxp dev create my-app             # Create a new project');
   console.log();
-  
+
   console.log(chalk.bold('Learn more:'));
   console.log('  Website: ' + chalk.underline('https://atxp.dev'));
   console.log('  GitHub:  ' + chalk.underline('https://github.com/atxp-dev/cli'));

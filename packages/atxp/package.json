@@ -34,11 +34,12 @@
     "create"
   ],
   "dependencies": {
+    "@atxp/client": "^0.10.5",
     "chalk": "^5.3.0",
-    "inquirer": "^9.2.12",
-    "ora": "^7.0.1",
     "fs-extra": "^11.2.0",
-    "open": "^9.1.0"
+    "inquirer": "^9.2.12",
+    "open": "^9.1.0",
+    "ora": "^7.0.1"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
