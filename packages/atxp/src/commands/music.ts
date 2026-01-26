@@ -2,7 +2,7 @@ import { callTool } from '../call-tool.js';
 import chalk from 'chalk';
 
 const SERVER = 'music.mcp.atxp.ai';
-const TOOL = 'generate_music';
+const TOOL = 'music_create';
 
 export async function musicCommand(prompt: string): Promise<void> {
   if (!prompt || prompt.trim().length === 0) {

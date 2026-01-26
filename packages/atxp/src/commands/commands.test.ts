@@ -3,14 +3,14 @@ import { describe, it, expect } from 'vitest';
 describe('Tool Commands', () => {
   describe('search command', () => {
     const SERVER = 'search.mcp.atxp.ai';
-    const TOOL = 'search';
+    const TOOL = 'search_search';
 
     it('should have correct server', () => {
       expect(SERVER).toBe('search.mcp.atxp.ai');
     });
 
     it('should have correct tool name', () => {
-      expect(TOOL).toBe('search');
+      expect(TOOL).toBe('search_search');
     });
 
     it('should validate query is required', () => {
@@ -33,14 +33,14 @@ describe('Tool Commands', () => {
 
   describe('image command', () => {
     const SERVER = 'image.mcp.atxp.ai';
-    const TOOL = 'generate_image';
+    const TOOL = 'image_create_image';
 
     it('should have correct server', () => {
       expect(SERVER).toBe('image.mcp.atxp.ai');
     });
 
     it('should have correct tool name', () => {
-      expect(TOOL).toBe('generate_image');
+      expect(TOOL).toBe('image_create_image');
     });
 
     it('should validate prompt is required', () => {
@@ -55,14 +55,14 @@ describe('Tool Commands', () => {
 
   describe('music command', () => {
     const SERVER = 'music.mcp.atxp.ai';
-    const TOOL = 'generate_music';
+    const TOOL = 'music_create';
 
     it('should have correct server', () => {
       expect(SERVER).toBe('music.mcp.atxp.ai');
     });
 
     it('should have correct tool name', () => {
-      expect(TOOL).toBe('generate_music');
+      expect(TOOL).toBe('music_create');
     });
 
     it('should validate prompt is required', () => {
@@ -77,14 +77,14 @@ describe('Tool Commands', () => {
 
   describe('video command', () => {
     const SERVER = 'video.mcp.atxp.ai';
-    const TOOL = 'generate_video';
+    const TOOL = 'create_video';
 
     it('should have correct server', () => {
       expect(SERVER).toBe('video.mcp.atxp.ai');
     });
 
     it('should have correct tool name', () => {
-      expect(TOOL).toBe('generate_video');
+      expect(TOOL).toBe('create_video');
     });
 
     it('should validate prompt is required', () => {

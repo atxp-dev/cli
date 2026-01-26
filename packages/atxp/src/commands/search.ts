@@ -2,7 +2,7 @@ import { callTool } from '../call-tool.js';
 import chalk from 'chalk';
 
 const SERVER = 'search.mcp.atxp.ai';
-const TOOL = 'search';
+const TOOL = 'search_search';
 
 export async function searchCommand(query: string): Promise<void> {
   if (!query || query.trim().length === 0) {

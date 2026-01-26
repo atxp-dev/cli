@@ -2,7 +2,7 @@ import { callTool } from '../call-tool.js';
 import chalk from 'chalk';
 
 const SERVER = 'image.mcp.atxp.ai';
-const TOOL = 'generate_image';
+const TOOL = 'image_create_image';
 
 export async function imageCommand(prompt: string): Promise<void> {
   if (!prompt || prompt.trim().length === 0) {
