@@ -238,7 +238,7 @@ async function main() {
       }
       break;
 
-    case 'demo':
+    case 'demo': {
       // Legacy support - redirect to dev demo
       console.log('Starting ATXP demo...');
       const demoDepOk = await checkAllDependencies('demo');
@@ -248,6 +248,7 @@ async function main() {
       }
       runDemo(demoOptions);
       break;
+    }
 
     case 'help':
     case '--help':
