@@ -33,7 +33,7 @@ export async function login(options: LoginOptions = {}): Promise<void> {
 
     // If token provided directly, use it (headless mode)
     if (options.token) {
-      connectionString = options.token;
+      connectionString = `https://accounts.atxp.ai?connection_token=${options.token}`;
       console.log('Using provided token for headless authentication...');
     } else if (options.qr) {
       // QR code mode explicitly requested
