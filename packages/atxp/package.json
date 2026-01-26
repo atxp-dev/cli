@@ -1,6 +1,6 @@
 {
   "name": "atxp",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "ATXP CLI - Command line tool for creating ATXP projects and running demos",
   "license": "MIT",
   "repository": {
