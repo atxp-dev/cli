@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'packages/atxp/package.json'
+  workflow_dispatch:
 
 jobs:
   publish:
