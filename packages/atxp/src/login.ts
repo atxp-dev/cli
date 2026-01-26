@@ -4,10 +4,12 @@ import path from 'path';
 import os from 'os';
 import chalk from 'chalk';
 import open from 'open';
+import qrcode from 'qrcode-terminal';
 
 interface LoginOptions {
   force?: boolean;
   token?: string;
+  qr?: boolean;
 }
 
 const CONFIG_DIR = path.join(os.homedir(), '.atxp');
@@ -33,9 +35,12 @@ export async function login(options: LoginOptions = {}): Promise<void> {
     if (options.token) {
       connectionString = options.token;
       console.log('Using provided token for headless authentication...');
+    } else if (options.qr) {
+      // QR code mode explicitly requested
+      connectionString = await loginWithQRCode();
     } else {
-      // Otherwise, use browser-based login
-      connectionString = await loginWithBrowser();
+      // Try browser first, fall back to QR code on failure
+      connectionString = await loginWithBrowserOrQR();
     }
 
     saveConnectionString(connectionString);
@@ -54,7 +59,31 @@ export async function login(options: LoginOptions = {}): Promise<void> {
   }
 }
 
-async function loginWithBrowser(): Promise<string> {
+/**
+ * Check if we're likely in a headless environment where browser won't work
+ */
+function isHeadlessEnvironment(): boolean {
+  // Common indicators of headless/non-GUI environments
+  const isSSH = !!process.env.SSH_TTY || !!process.env.SSH_CONNECTION;
+  const noDisplay = process.platform !== 'win32' && process.platform !== 'darwin' && !process.env.DISPLAY;
+  const isDocker = fs.existsSync('/.dockerenv');
+  const isCI = !!process.env.CI || !!process.env.GITHUB_ACTIONS || !!process.env.GITLAB_CI;
+
+  return isSSH || noDisplay || isDocker || isCI;
+}
+
+/**
+ * Try browser login first, fall back to QR code if it fails
+ */
+async function loginWithBrowserOrQR(): Promise<string> {
+  // If we detect a headless environment, go straight to QR
+  if (isHeadlessEnvironment()) {
+    console.log(chalk.yellow('Headless environment detected, using QR code login...'));
+    console.log();
+    return loginWithQRCode();
+  }
+
+  // Try browser-based login
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       const url = new URL(req.url!, `http://localhost`);
@@ -62,7 +91,151 @@ async function loginWithBrowser(): Promise<string> {
 
       if (connectionString) {
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(`
+        res.end(getSuccessHTML());
+        server.close();
+        resolve(decodeURIComponent(connectionString));
+      } else {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Missing connection_string parameter');
+      }
+    });
+
+    server.on('error', (err) => {
+      reject(new Error(`Failed to start local server: ${err.message}`));
+    });
+
+    // Listen on random available port
+    server.listen(0, '127.0.0.1', async () => {
+      const address = server.address();
+      const port = typeof address === 'object' ? address?.port : null;
+
+      if (!port) {
+        reject(new Error('Failed to start local server'));
+        return;
+      }
+
+      const redirectUri = `http://localhost:${port}/callback`;
+      const loginUrl = `https://accounts.atxp.ai?cli_redirect=${encodeURIComponent(redirectUri)}`;
+
+      console.log('Opening browser to complete login...');
+      console.log(chalk.gray(`(${loginUrl})`));
+      console.log();
+
+      try {
+        // Try to open browser
+        const browserProcess = await open(loginUrl);
+
+        // Check if the browser process exited with an error
+        browserProcess.on('error', async () => {
+          console.log();
+          console.log(chalk.yellow('Browser failed to open. Switching to QR code...'));
+          console.log();
+          server.close();
+          try {
+            const result = await loginWithQRCode();
+            resolve(result);
+          } catch (qrError) {
+            reject(qrError);
+          }
+        });
+
+        console.log('Waiting for authentication...');
+        console.log(chalk.gray('(If browser did not open, press Ctrl+C and run: npx atxp login --qr)'));
+
+      } catch (openError) {
+        // Browser open failed, fall back to QR
+        console.log();
+        console.log(chalk.yellow('Could not open browser. Switching to QR code...'));
+        console.log();
+        server.close();
+        try {
+          const result = await loginWithQRCode();
+          resolve(result);
+        } catch (qrError) {
+          reject(qrError);
+        }
+        return;
+      }
+
+      // Timeout after 5 minutes
+      const timeout = setTimeout(() => {
+        server.close();
+        reject(new Error('Login timed out. Please try again.'));
+      }, 5 * 60 * 1000);
+
+      server.on('close', () => {
+        clearTimeout(timeout);
+      });
+    });
+  });
+}
+
+/**
+ * QR code based login - shows QR in terminal for mobile scanning
+ */
+async function loginWithQRCode(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const server = http.createServer((req, res) => {
+      const url = new URL(req.url!, `http://localhost`);
+      const connectionString = url.searchParams.get('connection_string');
+
+      if (connectionString) {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(getSuccessHTML());
+        server.close();
+        resolve(decodeURIComponent(connectionString));
+      } else {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Missing connection_string parameter');
+      }
+    });
+
+    server.on('error', (err) => {
+      reject(new Error(`Failed to start local server: ${err.message}`));
+    });
+
+    // Listen on random available port
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      const port = typeof address === 'object' ? address?.port : null;
+
+      if (!port) {
+        reject(new Error('Failed to start local server'));
+        return;
+      }
+
+      const redirectUri = `http://localhost:${port}/callback`;
+      const loginUrl = `https://accounts.atxp.ai?cli_redirect=${encodeURIComponent(redirectUri)}`;
+
+      console.log(chalk.bold('Scan this QR code with your phone to login:'));
+      console.log();
+
+      // Generate and display QR code
+      qrcode.generate(loginUrl, { small: true }, (qr) => {
+        console.log(qr);
+      });
+
+      console.log();
+      console.log(chalk.gray('Or open this URL manually:'));
+      console.log(chalk.cyan(loginUrl));
+      console.log();
+      console.log('Waiting for authentication...');
+
+      // Timeout after 5 minutes
+      const timeout = setTimeout(() => {
+        server.close();
+        reject(new Error('Login timed out. Please try again.'));
+      }, 5 * 60 * 1000);
+
+      server.on('close', () => {
+        clearTimeout(timeout);
+      });
+    });
+  });
+}
+
+function getSuccessHTML(): string {
+  return `
 <!DOCTYPE html>
 <html>
 <head>
@@ -95,50 +268,7 @@ async function loginWithBrowser(): Promise<string> {
   </div>
 </body>
 </html>
-        `);
-        server.close();
-        resolve(decodeURIComponent(connectionString));
-      } else {
-        res.writeHead(400, { 'Content-Type': 'text/plain' });
-        res.end('Missing connection_string parameter');
-      }
-    });
-
-    server.on('error', (err) => {
-      reject(new Error(`Failed to start local server: ${err.message}`));
-    });
-
-    // Listen on random available port
-    server.listen(0, '127.0.0.1', () => {
-      const address = server.address();
-      const port = typeof address === 'object' ? address?.port : null;
-
-      if (!port) {
-        reject(new Error('Failed to start local server'));
-        return;
-      }
-
-      const redirectUri = `http://localhost:${port}/callback`;
-      const loginUrl = `https://accounts.atxp.ai?cli_redirect=${encodeURIComponent(redirectUri)}`;
-
-      console.log('Opening browser to complete login...');
-      console.log(chalk.gray(`(${loginUrl})`));
-      console.log();
-      console.log('Waiting for authentication...');
-
-      open(loginUrl);
-
-      // Timeout after 5 minutes
-      const timeout = setTimeout(() => {
-        server.close();
-        reject(new Error('Login timed out. Please try again.'));
-      }, 5 * 60 * 1000);
-
-      server.on('close', () => {
-        clearTimeout(timeout);
-      });
-    });
-  });
+  `;
 }
 
 function saveConnectionString(connectionString: string): void {
