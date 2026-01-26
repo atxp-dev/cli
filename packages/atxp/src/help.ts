@@ -34,6 +34,7 @@ export function showHelp(): void {
 
   console.log(chalk.bold('Login Options:'));
   console.log('  ' + chalk.yellow('--token, -t') + '        ' + 'Provide token directly (headless mode)');
+  console.log('  ' + chalk.yellow('--qr') + '               ' + 'Use QR code login (for terminals without browser)');
   console.log('  ' + chalk.yellow('--force') + '            ' + 'Update connection string even if already set');
   console.log();
 
@@ -54,6 +55,7 @@ export function showHelp(): void {
 
   console.log(chalk.bold('Examples:'));
   console.log('  npx atxp login                         # Log in to ATXP (browser)');
+  console.log('  npx atxp login --qr                    # Log in with QR code');
   console.log('  npx atxp login --token $TOKEN          # Log in with token (headless)');
   console.log('  npx atxp search "latest AI news"       # Search the web');
   console.log('  npx atxp image "sunset over mountains" # Generate an image');
