@@ -28,6 +28,7 @@ interface CreateOptions {
 
 interface LoginOptions {
   force: boolean;
+  token?: string;
 }
 
 // Parse command line arguments
@@ -76,6 +77,7 @@ function parseArgs(): {
   const verbose = process.argv.includes('--verbose') || process.argv.includes('-v');
   const refresh = process.argv.includes('--refresh');
   const force = process.argv.includes('--force');
+  const token = getArgValue('--token', '-t');
 
   // Parse create options
   const framework = getArgValue('--framework', '-f') as Framework | undefined;
@@ -110,7 +112,7 @@ function parseArgs(): {
     subCommand,
     demoOptions: { port, dir, verbose, refresh },
     createOptions: { framework, appName, git },
-    loginOptions: { force },
+    loginOptions: { force, token },
     toolArgs,
   };
 }
