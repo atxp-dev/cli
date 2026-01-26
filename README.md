@@ -95,6 +95,31 @@ npm start  # For Express projects
 npm start  # For Cloudflare projects (runs vite dev)
 ```
 
+## Agent Skill
+
+This repo includes an [Anthropic Agent Skill](https://github.com/anthropics/skills) that teaches AI assistants how to use ATXP tools.
+
+### Installation
+
+Copy the skill to your Claude skills directory:
+```bash
+cp -r skills/atxp ~/.claude/skills/
+```
+
+Or install via skills.sh:
+```bash
+npx skills add atxp-dev/cli
+```
+
+### What It Enables
+
+Once installed, Claude can use ATXP tools when you ask for:
+- Web search (`npx atxp search <query>`)
+- AI image generation (`npx atxp image <prompt>`)
+- AI music generation (`npx atxp music <prompt>`)
+- AI video generation (`npx atxp video <prompt>`)
+- X/Twitter search (`npx atxp x <query>`)
+
 ## Development
 
 Install dependencies:
