@@ -1,6 +1,6 @@
 {
   "name": "@atxp-dev/cli-monorepo",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "ATXP CLI tools for creating projects and running demos",
   "license": "MIT",
   "repository": {
