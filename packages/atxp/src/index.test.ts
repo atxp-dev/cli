@@ -141,5 +141,132 @@ describe('ATXP CLI', () => {
       expect(parseToolArgs(['node', 'script', 'x', 'trending'])).toBe('trending');
       expect(parseToolArgs(['node', 'script', 'search'])).toBe('');
     });
+
+    it('should identify paas command', () => {
+      const isPaasCommand = (command: string) => command === 'paas';
+
+      expect(isPaasCommand('paas')).toBe(true);
+      expect(isPaasCommand('search')).toBe(false);
+    });
+  });
+
+  describe('PAAS command routing', () => {
+    it('should identify PAAS categories', () => {
+      const paasCategories = ['worker', 'db', 'storage', 'dns', 'analytics'];
+
+      const isPaasCategory = (category: string) => {
+        return paasCategories.includes(category);
+      };
+
+      expect(isPaasCategory('worker')).toBe(true);
+      expect(isPaasCategory('db')).toBe(true);
+      expect(isPaasCategory('storage')).toBe(true);
+      expect(isPaasCategory('dns')).toBe(true);
+      expect(isPaasCategory('analytics')).toBe(true);
+      expect(isPaasCategory('search')).toBe(false);
+    });
+
+    it('should parse PAAS arguments', () => {
+      const parsePaasArgs = (argv: string[]) => {
+        const command = argv[2];
+        if (command !== 'paas') return [];
+        return argv.slice(3).filter((arg) => !arg.startsWith('-'));
+      };
+
+      expect(parsePaasArgs(['node', 'script', 'paas', 'worker', 'deploy', 'my-api'])).toEqual([
+        'worker',
+        'deploy',
+        'my-api',
+      ]);
+      expect(parsePaasArgs(['node', 'script', 'paas', 'db', 'list'])).toEqual(['db', 'list']);
+      expect(
+        parsePaasArgs(['node', 'script', 'paas', 'storage', 'upload', 'bucket', 'key', '--file', 'path'])
+      ).toEqual(['storage', 'upload', 'bucket', 'key', 'path']);
+      expect(parsePaasArgs(['node', 'script', 'search', 'query'])).toEqual([]);
+    });
+
+    it('should parse PAAS options', () => {
+      const getArgValue = (argv: string[], flag: string): string | undefined => {
+        const index = argv.findIndex((arg) => arg === flag);
+        return index !== -1 ? argv[index + 1] : undefined;
+      };
+
+      const argv = ['node', 'script', 'paas', 'worker', 'deploy', 'my-api', '--code', './worker.js'];
+      expect(getArgValue(argv, '--code')).toBe('./worker.js');
+
+      const queryArgv = ['node', 'script', 'paas', 'db', 'query', 'mydb', '--sql', 'SELECT * FROM users'];
+      expect(getArgValue(queryArgv, '--sql')).toBe('SELECT * FROM users');
+    });
+
+    it('should identify worker subcommands', () => {
+      const workerCommands = ['deploy', 'list', 'logs', 'delete'];
+
+      const isWorkerCommand = (subCommand: string) => {
+        return workerCommands.includes(subCommand);
+      };
+
+      expect(isWorkerCommand('deploy')).toBe(true);
+      expect(isWorkerCommand('list')).toBe(true);
+      expect(isWorkerCommand('logs')).toBe(true);
+      expect(isWorkerCommand('delete')).toBe(true);
+      expect(isWorkerCommand('create')).toBe(false);
+    });
+
+    it('should identify db subcommands', () => {
+      const dbCommands = ['create', 'list', 'query', 'delete'];
+
+      const isDbCommand = (subCommand: string) => {
+        return dbCommands.includes(subCommand);
+      };
+
+      expect(isDbCommand('create')).toBe(true);
+      expect(isDbCommand('list')).toBe(true);
+      expect(isDbCommand('query')).toBe(true);
+      expect(isDbCommand('delete')).toBe(true);
+      expect(isDbCommand('deploy')).toBe(false);
+    });
+
+    it('should identify storage subcommands', () => {
+      const storageCommands = ['create', 'list', 'upload', 'download', 'files', 'delete-bucket', 'delete-file'];
+
+      const isStorageCommand = (subCommand: string) => {
+        return storageCommands.includes(subCommand);
+      };
+
+      expect(isStorageCommand('create')).toBe(true);
+      expect(isStorageCommand('upload')).toBe(true);
+      expect(isStorageCommand('download')).toBe(true);
+      expect(isStorageCommand('files')).toBe(true);
+      expect(isStorageCommand('delete-bucket')).toBe(true);
+      expect(isStorageCommand('delete-file')).toBe(true);
+      expect(isStorageCommand('deploy')).toBe(false);
+    });
+
+    it('should identify dns subcommands', () => {
+      const dnsCommands = ['add', 'list', 'record', 'connect'];
+
+      const isDnsCommand = (subCommand: string) => {
+        return dnsCommands.includes(subCommand);
+      };
+
+      expect(isDnsCommand('add')).toBe(true);
+      expect(isDnsCommand('list')).toBe(true);
+      expect(isDnsCommand('record')).toBe(true);
+      expect(isDnsCommand('connect')).toBe(true);
+      expect(isDnsCommand('deploy')).toBe(false);
+    });
+
+    it('should identify analytics subcommands', () => {
+      const analyticsCommands = ['query', 'events', 'stats'];
+
+      const isAnalyticsCommand = (subCommand: string) => {
+        return analyticsCommands.includes(subCommand);
+      };
+
+      expect(isAnalyticsCommand('query')).toBe(true);
+      expect(isAnalyticsCommand('events')).toBe(true);
+      expect(isAnalyticsCommand('stats')).toBe(true);
+      expect(isAnalyticsCommand('deploy')).toBe(false);
+    });
   });
 });

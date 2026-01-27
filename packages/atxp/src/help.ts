@@ -21,6 +21,14 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('x') + ' ' + chalk.yellow('<query>') + '        ' + 'Search X/Twitter');
   console.log();
 
+  console.log(chalk.bold('PAAS (Platform as a Service):'));
+  console.log('  ' + chalk.cyan('paas worker') + '        ' + 'Deploy and manage serverless workers');
+  console.log('  ' + chalk.cyan('paas db') + '            ' + 'Create and query databases (D1)');
+  console.log('  ' + chalk.cyan('paas storage') + '       ' + 'Manage file storage (R2)');
+  console.log('  ' + chalk.cyan('paas dns') + '           ' + 'Manage domains and DNS records');
+  console.log('  ' + chalk.cyan('paas analytics') + '     ' + 'Query analytics data');
+  console.log();
+
   console.log(chalk.bold('Development:'));
   console.log('  ' + chalk.cyan('dev demo') + '           ' + 'Run the ATXP demo application');
   console.log(
@@ -64,6 +72,16 @@ export function showHelp(): void {
   console.log('  npx atxp x "trending topics"           # Search X/Twitter');
   console.log('  npx atxp dev demo                      # Run the demo');
   console.log('  npx atxp dev create my-app             # Create a new project');
+  console.log();
+
+  console.log(chalk.bold('PAAS Examples:'));
+  console.log('  npx atxp paas worker deploy my-api --code ./worker.js');
+  console.log('  npx atxp paas db create my-database');
+  console.log('  npx atxp paas db query mydb --sql "SELECT * FROM users"');
+  console.log('  npx atxp paas storage create my-bucket');
+  console.log('  npx atxp paas storage upload my-bucket logo.png --file ./logo.png');
+  console.log('  npx atxp paas dns add example.com');
+  console.log('  npx atxp paas dns connect example.com my-api');
   console.log();
 
   console.log(chalk.bold('Learn more:'));

@@ -12,6 +12,7 @@ import { imageCommand } from './commands/image.js';
 import { musicCommand } from './commands/music.js';
 import { videoCommand } from './commands/video.js';
 import { xCommand } from './commands/x.js';
+import { paasCommand } from './commands/paas/index.js';
 
 interface DemoOptions {
   port: number;
@@ -32,6 +33,32 @@ interface LoginOptions {
   qr?: boolean;
 }
 
+interface PaasOptions {
+  code?: string;
+  db?: string[];
+  bucket?: string[];
+  limit?: number;
+  level?: string;
+  since?: string;
+  sql?: string;
+  params?: string;
+  file?: string;
+  content?: string;
+  output?: string;
+  prefix?: string;
+  type?: string;
+  name?: string;
+  recordContent?: string;
+  ttl?: number;
+  proxied?: boolean;
+  priority?: number;
+  subdomain?: string;
+  range?: string;
+  event?: string;
+  groupBy?: string;
+  enableAnalytics?: boolean;
+}
+
 // Parse command line arguments
 function parseArgs(): {
   command: string;
@@ -39,6 +66,8 @@ function parseArgs(): {
   demoOptions: DemoOptions;
   createOptions: CreateOptions;
   loginOptions: LoginOptions;
+  paasOptions: PaasOptions;
+  paasArgs: string[];
   toolArgs: string;
 } {
   const command = process.argv[2];
@@ -51,6 +80,8 @@ function parseArgs(): {
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
       createOptions: { framework: undefined, appName: undefined, git: undefined },
       loginOptions: { force: false },
+      paasOptions: {},
+      paasArgs: [],
       toolArgs: '',
     };
   }
@@ -109,17 +140,62 @@ function parseArgs(): {
   // Get tool arguments (everything after the command)
   const toolArgs = process.argv.slice(3).filter((arg) => !arg.startsWith('-')).join(' ');
 
+  // Get all values for a repeatable flag (like --db can appear multiple times)
+  const getAllArgValues = (flag: string): string[] => {
+    const values: string[] = [];
+    for (let i = 0; i < process.argv.length; i++) {
+      if (process.argv[i] === flag && process.argv[i + 1]) {
+        values.push(process.argv[i + 1]);
+      }
+    }
+    return values;
+  };
+
+  // Parse PAAS options
+  const paasOptions: PaasOptions = {
+    code: getArgValue('--code', '-c'),
+    db: getAllArgValues('--db'),
+    bucket: getAllArgValues('--bucket'),
+    limit: getArgValue('--limit', '-l') ? parseInt(getArgValue('--limit', '-l')!, 10) : undefined,
+    level: getArgValue('--level', ''),
+    since: getArgValue('--since', ''),
+    sql: getArgValue('--sql', ''),
+    params: getArgValue('--params', ''),
+    file: getArgValue('--file', ''),
+    content: getArgValue('--content', ''),
+    output: getArgValue('--output', '-o'),
+    prefix: getArgValue('--prefix', ''),
+    type: getArgValue('--type', ''),
+    name: getArgValue('--name', ''),
+    recordContent: getArgValue('--record-content', ''),
+    ttl: getArgValue('--ttl', '') ? parseInt(getArgValue('--ttl', '')!, 10) : undefined,
+    proxied: process.argv.includes('--proxied'),
+    priority: getArgValue('--priority', '') ? parseInt(getArgValue('--priority', '')!, 10) : undefined,
+    subdomain: getArgValue('--subdomain', ''),
+    range: getArgValue('--range', ''),
+    event: getArgValue('--event', ''),
+    groupBy: getArgValue('--group-by', ''),
+    enableAnalytics: process.argv.includes('--enable-analytics'),
+  };
+
+  // Get PAAS args (everything after 'paas' that doesn't start with -)
+  const paasArgs = command === 'paas'
+    ? process.argv.slice(3).filter((arg) => !arg.startsWith('-'))
+    : [];
+
   return {
     command,
     subCommand,
     demoOptions: { port, dir, verbose, refresh },
     createOptions: { framework, appName, git },
     loginOptions: { force, token, qr },
+    paasOptions,
+    paasArgs,
     toolArgs,
   };
 }
 
-const { command, subCommand, demoOptions, createOptions, loginOptions, toolArgs } = parseArgs();
+const { command, subCommand, demoOptions, createOptions, loginOptions, paasOptions, paasArgs, toolArgs } = parseArgs();
 
 // Detect if we're in create mode (npm create atxp or npx atxp create)
 const isCreateMode =
@@ -189,6 +265,10 @@ async function main() {
 
     case 'x':
       await xCommand(toolArgs);
+      break;
+
+    case 'paas':
+      await paasCommand(paasArgs, paasOptions);
       break;
 
     case 'dev':
