@@ -1,6 +1,6 @@
 ---
 name: atxp
-description: Access ATXP paid API tools for web search, AI image generation, music creation, video generation, X/Twitter search, and cloud deployment (Workers, D1, R2). Requires authentication via `npx atxp login`.
+description: Access ATXP paid API tools for web search, AI image generation, music creation, video generation, and X/Twitter search. Use when users need real-time web search, AI-generated media (images, music, video), or X/Twitter search. Requires authentication via `npx atxp login`.
 ---
 
 # ATXP Tools
@@ -30,28 +30,7 @@ source ~/.atxp/config
 
 ## PaaS Tools
 
-Deploy serverless apps with Cloudflare Workers, SQLite databases (D1), and object storage (R2).
-
-### Workers (Serverless Functions)
-- `deploy_worker` - Deploy a Cloudflare Worker
-- `list_deployments` - List all deployed workers
-- `get_logs` - Retrieve worker logs
-- `delete_worker` - Delete a worker deployment
-
-### D1 Database (SQLite)
-- `create_database` - Create a new D1 database
-- `list_databases` - List all databases
-- `query` - Execute SQL queries
-- `delete_database` - Delete a database
-
-### R2 Storage (Object Storage)
-- `create_bucket` - Create a new R2 bucket
-- `list_buckets` - List all buckets
-- `upload_file` - Upload a file to a bucket
-- `get_file` - Retrieve a file from a bucket
-- `list_files` - List files in a bucket
-- `delete_file` - Delete a file
-- `delete_bucket` - Delete a bucket
+Deploy serverless applications with functions, databases, object storage, custom domains, and analytics via `paas.mcp.atxp.ai`. See the `atxp-paas` skill for detailed usage.
 
 ## Usage
 
@@ -84,4 +63,4 @@ const result = await client.callTool({
 | `music.mcp.atxp.ai` | `music_create` |
 | `video.mcp.atxp.ai` | `create_video` |
 | `x-live-search.mcp.atxp.ai` | `x_live_search` |
-| `paas.mcp.atxp.ai` | `deploy_worker`, `list_deployments`, `get_logs`, `delete_worker`, `create_database`, `list_databases`, `query`, `delete_database`, `create_bucket`, `list_buckets`, `delete_bucket`, `upload_file`, `get_file`, `list_files`, `delete_file` |
+| `paas.mcp.atxp.ai` | PaaS tools (see `atxp-paas` skill) |
