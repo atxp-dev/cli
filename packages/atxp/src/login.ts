@@ -1,19 +1,15 @@
 import http from 'http';
 import fs from 'fs';
-import path from 'path';
-import os from 'os';
 import chalk from 'chalk';
 import open from 'open';
 import qrcode from 'qrcode-terminal';
+import { saveConnection, updateShellProfile, CONFIG_FILE, getShellProfile } from './config.js';
 
 interface LoginOptions {
   force?: boolean;
   token?: string;
   qr?: boolean;
 }
-
-const CONFIG_DIR = path.join(os.homedir(), '.atxp');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config');
 
 export async function login(options: LoginOptions = {}): Promise<void> {
   // Check if already logged in
@@ -43,16 +39,37 @@ export async function login(options: LoginOptions = {}): Promise<void> {
       connectionString = await loginWithBrowserOrQR();
     }
 
-    saveConnectionString(connectionString);
+    saveConnection(connectionString);
+
+    // Try to auto-update shell profile
+    const profileUpdated = updateShellProfile();
+    const profilePath = getShellProfile();
 
     console.log();
     console.log(chalk.green('Login successful!'));
-    console.log();
-    console.log('To use ATXP tools in this terminal, run:');
-    console.log(chalk.cyan(`  source ${CONFIG_FILE}`));
-    console.log();
-    console.log('Or add this to your shell profile (~/.bashrc, ~/.zshrc, etc.):');
-    console.log(chalk.cyan(`  source ${CONFIG_FILE}`));
+
+    if (profileUpdated && profilePath) {
+      console.log();
+      console.log(`Added ATXP to ${chalk.cyan(profilePath)}`);
+      console.log('New terminal windows will automatically have access to ATXP tools.');
+      console.log();
+      console.log('To use ATXP in this terminal session, run:');
+      console.log(chalk.cyan(`  source ${CONFIG_FILE}`));
+    } else if (profilePath) {
+      // Profile exists but wasn't updated (already has source line)
+      console.log();
+      console.log("You're all set! New terminal windows will have access to ATXP tools.");
+      console.log();
+      console.log('To use ATXP in this terminal session, run:');
+      console.log(chalk.cyan(`  source ${CONFIG_FILE}`));
+    } else {
+      // Couldn't detect shell profile - provide manual instructions
+      console.log();
+      console.log('To use ATXP tools in this terminal, run:');
+      console.log(chalk.cyan(`  source ${CONFIG_FILE}`));
+      console.log();
+      console.log('To persist this, add the above line to your shell profile.');
+    }
   } catch (error) {
     console.error(chalk.red('Login failed:'), error instanceof Error ? error.message : error);
     process.exit(1);
@@ -271,12 +288,3 @@ function getSuccessHTML(): string {
   `;
 }
 
-function saveConnectionString(connectionString: string): void {
-  if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
-  }
-
-  const configContent = `export ATXP_CONNECTION="${connectionString}"
-`;
-  fs.writeFileSync(CONFIG_FILE, configContent, { mode: 0o600 });
-}

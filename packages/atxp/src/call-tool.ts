@@ -1,5 +1,6 @@
 import { atxpClient, ATXPAccount } from '@atxp/client';
 import chalk from 'chalk';
+import { getConnection } from './config.js';
 
 export interface ToolResult {
   content: Array<{ type: string; text?: string; data?: string; mimeType?: string }>;
@@ -10,7 +11,7 @@ export async function callTool(
   tool: string,
   args: Record<string, unknown>
 ): Promise<string> {
-  const connection = process.env.ATXP_CONNECTION;
+  const connection = getConnection();
 
   if (!connection) {
     console.error(chalk.red('Not logged in.'));
