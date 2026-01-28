@@ -9,13 +9,23 @@ interface WorkerDeployOptions {
   code?: string;
   db?: string[];
   bucket?: string[];
-  enableAnalytics?: boolean;
+  enableAnalytics?: boolean | string;
   env?: string[];
   envFile?: string;
 }
 
-// Reserved env var names that conflict with existing bindings
-const RESERVED_ENV_NAMES = ['DB', 'BUCKET', 'ANALYTICS', 'USER_NAMESPACE'];
+// Base reserved env var names that conflict with existing bindings
+const BASE_RESERVED_ENV_NAMES = ['DB', 'BUCKET', 'USER_NAMESPACE'];
+
+/**
+ * Get reserved env var names based on analytics binding configuration
+ */
+function getReservedEnvNames(analyticsBindingName?: string): string[] {
+  // If analytics is enabled, add the binding name to reserved list
+  // Default binding name is 'ANALYTICS'
+  const bindingName = analyticsBindingName || 'ANALYTICS';
+  return [...BASE_RESERVED_ENV_NAMES, bindingName.toUpperCase()];
+}
 
 // Patterns that suggest sensitive data (warn user about plain text storage)
 const SENSITIVE_PATTERNS = [/SECRET/i, /PASSWORD/i, /KEY/i, /TOKEN/i, /CREDENTIAL/i];
@@ -24,15 +34,15 @@ const SENSITIVE_PATTERNS = [/SECRET/i, /PASSWORD/i, /KEY/i, /TOKEN/i, /CREDENTIA
  * Validate an environment variable name
  * Must be a valid identifier and not reserved
  */
-function validateEnvVarName(name: string): { valid: boolean; error?: string } {
+function validateEnvVarName(name: string, reservedNames: string[]): { valid: boolean; error?: string } {
   // Check if it's a valid identifier (starts with letter or underscore, contains only alphanumeric and underscores)
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
     return { valid: false, error: `Invalid env var name "${name}": must be a valid identifier (letters, numbers, underscores, cannot start with number)` };
   }
 
   // Check if it's reserved
-  if (RESERVED_ENV_NAMES.includes(name.toUpperCase())) {
-    return { valid: false, error: `Reserved env var name "${name}": conflicts with existing bindings (${RESERVED_ENV_NAMES.join(', ')})` };
+  if (reservedNames.includes(name.toUpperCase())) {
+    return { valid: false, error: `Reserved env var name "${name}": conflicts with existing bindings (${reservedNames.join(', ')})` };
   }
 
   return { valid: true };
@@ -167,9 +177,17 @@ export async function workerDeployCommand(
     }
   }
 
+  // Determine the analytics binding name for reserved name validation
+  const analyticsBindingName = typeof options.enableAnalytics === 'string'
+    ? options.enableAnalytics
+    : options.enableAnalytics ? 'ANALYTICS' : undefined;
+  const reservedNames = options.enableAnalytics
+    ? getReservedEnvNames(analyticsBindingName)
+    : BASE_RESERVED_ENV_NAMES;
+
   // Validate all env var names
   for (const key of Object.keys(envVars)) {
-    const validation = validateEnvVarName(key);
+    const validation = validateEnvVarName(key, reservedNames);
     if (!validation.valid) {
       console.error(chalk.red(`Error: ${validation.error}`));
       process.exit(1);
@@ -194,7 +212,10 @@ export async function workerDeployCommand(
     args.storage_bindings = storageBindings;
   }
   if (options.enableAnalytics) {
-    args.enable_analytics = true;
+    // Pass the binding name if specified, otherwise true for default 'ANALYTICS'
+    args.enable_analytics = typeof options.enableAnalytics === 'string'
+      ? options.enableAnalytics
+      : true;
   }
   if (Object.keys(envVars).length > 0) {
     args.env_vars = envVars;

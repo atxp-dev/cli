@@ -56,7 +56,7 @@ interface PaasOptions {
   range?: string;
   event?: string;
   groupBy?: string;
-  enableAnalytics?: boolean;
+  enableAnalytics?: boolean | string;
   env?: string[];
   envFile?: string;
 }
@@ -177,7 +177,15 @@ function parseArgs(): {
     range: getArgValue('--range', ''),
     event: getArgValue('--event', ''),
     groupBy: getArgValue('--group-by', ''),
-    enableAnalytics: process.argv.includes('--enable-analytics'),
+    enableAnalytics: (() => {
+      const index = process.argv.indexOf('--enable-analytics');
+      if (index === -1) return undefined;
+      const nextArg = process.argv[index + 1];
+      // If no next arg, or next arg is another flag, return true (use default binding name)
+      if (!nextArg || nextArg.startsWith('-')) return true;
+      // Otherwise, use the provided binding name
+      return nextArg;
+    })(),
     env: getAllArgValues('--env'),
     envFile: getArgValue('--env-file', ''),
   };
