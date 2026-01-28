@@ -257,16 +257,43 @@ describe('ATXP CLI', () => {
     });
 
     it('should identify analytics subcommands', () => {
-      const analyticsCommands = ['query', 'events', 'stats'];
+      const analyticsCommands = ['list', 'schema', 'query', 'events', 'stats'];
 
       const isAnalyticsCommand = (subCommand: string) => {
         return analyticsCommands.includes(subCommand);
       };
 
+      expect(isAnalyticsCommand('list')).toBe(true);
+      expect(isAnalyticsCommand('schema')).toBe(true);
       expect(isAnalyticsCommand('query')).toBe(true);
       expect(isAnalyticsCommand('events')).toBe(true);
       expect(isAnalyticsCommand('stats')).toBe(true);
       expect(isAnalyticsCommand('deploy')).toBe(false);
+    });
+
+    it('should parse analytics schema dataset argument', () => {
+      const parseAnalyticsSchemaArgs = (argv: string[]) => {
+        // npx atxp paas analytics schema <dataset>
+        if (argv[2] === 'paas' && argv[3] === 'analytics' && argv[4] === 'schema') {
+          return argv[5];
+        }
+        return undefined;
+      };
+
+      expect(parseAnalyticsSchemaArgs(['node', 'script', 'paas', 'analytics', 'schema', 'events'])).toBe('events');
+      expect(parseAnalyticsSchemaArgs(['node', 'script', 'paas', 'analytics', 'schema', 'page_views'])).toBe('page_views');
+      expect(parseAnalyticsSchemaArgs(['node', 'script', 'paas', 'analytics', 'schema'])).toBe(undefined);
+      expect(parseAnalyticsSchemaArgs(['node', 'script', 'paas', 'analytics', 'list'])).toBe(undefined);
+    });
+
+    it('should parse analytics list command', () => {
+      const isAnalyticsListCommand = (argv: string[]) => {
+        return argv[2] === 'paas' && argv[3] === 'analytics' && argv[4] === 'list';
+      };
+
+      expect(isAnalyticsListCommand(['node', 'script', 'paas', 'analytics', 'list'])).toBe(true);
+      expect(isAnalyticsListCommand(['node', 'script', 'paas', 'analytics', 'query'])).toBe(false);
+      expect(isAnalyticsListCommand(['node', 'script', 'paas', 'db', 'list'])).toBe(false);
     });
   });
 });
