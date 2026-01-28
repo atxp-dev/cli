@@ -75,8 +75,9 @@ function parseArgs(): {
   const command = process.argv[2];
   const subCommand = process.argv[3];
 
-  // Check for help flags early
-  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  // Check for help flags early - but NOT for paas commands (they handle --help internally)
+  const helpFlag = process.argv.includes('--help') || process.argv.includes('-h');
+  if (helpFlag && command !== 'paas') {
     return {
       command: 'help',
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
