@@ -101,6 +101,74 @@ describe('Worker Commands', () => {
       });
     });
 
+    it('should enable analytics with custom binding name', async () => {
+      const mockCode = 'export default { fetch() { return new Response("Hello"); } }';
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(mockCode);
+      vi.mocked(callTool).mockResolvedValue('{"success": true}');
+
+      await workerDeployCommand('my-worker', {
+        code: './worker.js',
+        enableAnalytics: 'MY_STATS',
+      });
+
+      expect(callTool).toHaveBeenCalledWith('paas.mcp.atxp.ai', 'deploy_worker', {
+        name: 'my-worker',
+        code: mockCode,
+        enable_analytics: 'MY_STATS',
+      });
+    });
+
+    it('should reject ANALYTICS env var when using default analytics binding', async () => {
+      const mockCode = 'export default { fetch() { return new Response("Hello"); } }';
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(mockCode);
+
+      await expect(
+        workerDeployCommand('my-worker', {
+          code: './worker.js',
+          enableAnalytics: true,
+          env: ['ANALYTICS=test'],
+        })
+      ).rejects.toThrow('process.exit called');
+      expect(console.error).toHaveBeenCalled();
+    });
+
+    it('should reject custom binding name as env var when using custom analytics binding', async () => {
+      const mockCode = 'export default { fetch() { return new Response("Hello"); } }';
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(mockCode);
+
+      await expect(
+        workerDeployCommand('my-worker', {
+          code: './worker.js',
+          enableAnalytics: 'MY_STATS',
+          env: ['MY_STATS=test'],
+        })
+      ).rejects.toThrow('process.exit called');
+      expect(console.error).toHaveBeenCalled();
+    });
+
+    it('should allow ANALYTICS env var when using different custom binding name', async () => {
+      const mockCode = 'export default { fetch() { return new Response("Hello"); } }';
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readFileSync).mockReturnValue(mockCode);
+      vi.mocked(callTool).mockResolvedValue('{"success": true}');
+
+      await workerDeployCommand('my-worker', {
+        code: './worker.js',
+        enableAnalytics: 'MY_STATS',
+        env: ['ANALYTICS=test'],
+      });
+
+      expect(callTool).toHaveBeenCalledWith('paas.mcp.atxp.ai', 'deploy_worker', {
+        name: 'my-worker',
+        code: mockCode,
+        enable_analytics: 'MY_STATS',
+        env_vars: { ANALYTICS: 'test' },
+      });
+    });
+
     it('should exit with error when code flag is missing', async () => {
       await expect(workerDeployCommand('my-worker', {})).rejects.toThrow('process.exit called');
       expect(console.error).toHaveBeenCalled();
