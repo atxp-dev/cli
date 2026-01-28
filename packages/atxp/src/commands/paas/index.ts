@@ -57,7 +57,7 @@ interface PaasOptions {
   range?: string;
   event?: string;
   groupBy?: string;
-  enableAnalytics?: boolean;
+  enableAnalytics?: boolean | string;
   env?: string[];
   envFile?: string;
 }
@@ -74,7 +74,7 @@ function showPaasHelp(): void {
   console.log('    ' + chalk.gray('--bucket <binding:name>') + ' Bind a storage bucket (repeatable)');
   console.log('    ' + chalk.gray('--env KEY=VALUE') + '       Set environment variable (repeatable)');
   console.log('    ' + chalk.gray('--env-file <path>') + '     Load env vars from file');
-  console.log('    ' + chalk.gray('--enable-analytics') + '    Enable Analytics Engine binding');
+  console.log('    ' + chalk.gray('--enable-analytics [NAME]') + ' Enable Analytics Engine binding (default: ANALYTICS)');
   console.log('  ' + chalk.cyan('paas worker list') + '                 List all workers');
   console.log('  ' + chalk.cyan('paas worker logs') + ' ' + chalk.yellow('<name>') + '        Get worker logs');
   console.log('  ' + chalk.cyan('paas worker delete') + ' ' + chalk.yellow('<name>') + '      Delete a worker');
