@@ -59,6 +59,8 @@ interface PaasOptions {
   enableAnalytics?: boolean | string;
   env?: string[];
   envFile?: string;
+  follow?: boolean;
+  interval?: number;
 }
 
 // Parse command line arguments
@@ -189,6 +191,8 @@ function parseArgs(): {
     })(),
     env: getAllArgValues('--env'),
     envFile: getArgValue('--env-file', ''),
+    follow: process.argv.includes('--follow') || process.argv.includes('-f'),
+    interval: getArgValue('--interval', '') ? parseInt(getArgValue('--interval', '')!, 10) : undefined,
   };
 
   // Get PAAS args (everything after 'paas' that doesn't start with -)

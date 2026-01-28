@@ -112,6 +112,8 @@ interface WorkerLogsOptions {
   limit?: number;
   level?: string;
   since?: string;
+  follow?: boolean;
+  interval?: number;
 }
 
 export async function workerDeployCommand(
@@ -230,10 +232,145 @@ export async function workerListCommand(): Promise<void> {
   console.log(result);
 }
 
+interface LogEntry {
+  timestamp: string;
+  level: string;
+  message: string;
+  [key: string]: unknown;
+}
+
+const LOG_LEVEL_COLORS: Record<string, (text: string) => string> = {
+  error: chalk.red,
+  warn: chalk.yellow,
+  warning: chalk.yellow,
+  info: chalk.blue,
+  debug: chalk.gray,
+  log: chalk.white,
+};
+
+function formatAndPrintLog(log: LogEntry): void {
+  const colorFn = LOG_LEVEL_COLORS[log.level?.toLowerCase()] || chalk.white;
+  const timestamp = chalk.gray(log.timestamp);
+  const level = colorFn(`[${log.level?.toUpperCase() || 'LOG'}]`);
+  console.log(`${timestamp} ${level} ${log.message}`);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function streamLogs(
+  name: string,
+  options: WorkerLogsOptions
+): Promise<void> {
+  const pollInterval = options.interval || 2000;
+  const maxRetries = 3;
+  const retryDelay = 5000;
+  const maxSeenIds = 10000;
+
+  let lastTimestamp: string | undefined = options.since;
+  const seenIds = new Set<string>();
+  let running = true;
+  let retryCount = 0;
+
+  const cleanup = () => {
+    running = false;
+    console.log(chalk.yellow('\nStopping log stream...'));
+    process.exit(0);
+  };
+
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
+
+  console.log(chalk.cyan(`Streaming logs for ${name}... (Ctrl+C to stop)`));
+
+  while (running) {
+    try {
+      const args: Record<string, unknown> = { name };
+
+      if (options.limit !== undefined) {
+        args.limit = options.limit;
+      }
+      if (options.level) {
+        args.level = options.level;
+      }
+      if (lastTimestamp) {
+        args.since = lastTimestamp;
+      }
+
+      const result = await callTool(SERVER, 'get_logs', args);
+      retryCount = 0; // Reset retry count on success
+
+      // Parse the result - it may be a string or already parsed
+      let logs: LogEntry[] = [];
+      if (typeof result === 'string') {
+        try {
+          const parsed = JSON.parse(result);
+          logs = Array.isArray(parsed) ? parsed : (parsed.logs || []);
+        } catch {
+          // If parsing fails, it might be a formatted string output
+          // In that case, just print it and continue
+          if (result.trim() && !result.includes('No logs found')) {
+            console.log(result);
+          }
+          await sleep(pollInterval);
+          continue;
+        }
+      } else if (Array.isArray(result)) {
+        logs = result;
+      } else if (result && typeof result === 'object' && 'logs' in result) {
+        logs = (result as { logs: LogEntry[] }).logs;
+      }
+
+      // Filter out already-seen logs and print new ones
+      for (const log of logs) {
+        // Create a unique ID from timestamp and message
+        const logId = `${log.timestamp}-${log.message}`;
+
+        if (!seenIds.has(logId)) {
+          seenIds.add(logId);
+          formatAndPrintLog(log);
+
+          // Update lastTimestamp for next poll
+          if (log.timestamp && (!lastTimestamp || log.timestamp > lastTimestamp)) {
+            lastTimestamp = log.timestamp;
+          }
+        }
+      }
+
+      // Bound the seenIds set to prevent memory growth
+      if (seenIds.size > maxSeenIds) {
+        const idsArray = Array.from(seenIds);
+        const toDelete = idsArray.slice(0, idsArray.length - maxSeenIds);
+        for (const id of toDelete) {
+          seenIds.delete(id);
+        }
+      }
+
+      await sleep(pollInterval);
+    } catch (error) {
+      retryCount++;
+      if (retryCount >= maxRetries) {
+        console.error(chalk.red(`Error fetching logs after ${maxRetries} retries: ${(error as Error).message}`));
+        process.exit(1);
+      }
+      console.error(chalk.yellow(`Error fetching logs (retry ${retryCount}/${maxRetries}): ${(error as Error).message}`));
+      await sleep(retryDelay);
+    }
+  }
+}
+
 export async function workerLogsCommand(
   name: string,
   options: WorkerLogsOptions
 ): Promise<void> {
+  // If follow mode, use streaming
+  if (options.follow) {
+    await streamLogs(name, options);
+    return;
+  }
+
+  // One-time fetch (original behavior)
   const args: Record<string, unknown> = { name };
 
   if (options.limit !== undefined) {

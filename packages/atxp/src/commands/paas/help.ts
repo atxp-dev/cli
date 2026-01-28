@@ -106,12 +106,17 @@ export const COMMAND_HELP: Record<string, CommandHelp> = {
     usage: 'atxp paas worker logs <name> [options]',
     description: 'View logs for a deployed worker.',
     options: [
+      { flag: '--follow, -f', description: 'Stream logs continuously (Ctrl+C to stop)' },
+      { flag: '--interval <ms>', description: 'Polling interval in milliseconds [default: 2000]' },
       { flag: '--limit <n>', description: 'Number of log entries to show' },
       { flag: '--level <level>', description: 'Filter by log level (error, warn, info, debug)' },
       { flag: '--since <time>', description: 'Show logs since timestamp (e.g., 1h, 30m, 2024-01-01)' },
     ],
     examples: [
       { command: 'npx atxp paas worker logs my-api' },
+      { command: 'npx atxp paas worker logs my-api --follow' },
+      { command: 'npx atxp paas worker logs my-api -f --interval 500' },
+      { command: 'npx atxp paas worker logs my-api --follow --level error' },
       { command: 'npx atxp paas worker logs my-api --limit 100' },
       { command: 'npx atxp paas worker logs my-api --level error' },
       { command: 'npx atxp paas worker logs my-api --since 1h' },
