@@ -4,6 +4,7 @@ import {
   workerListCommand,
   workerLogsCommand,
   workerDeleteCommand,
+  workerInfoCommand,
 } from './worker.js';
 import {
   dbCreateCommand,
@@ -163,6 +164,15 @@ async function handleWorkerCommand(
       await workerListCommand();
       break;
 
+    case 'info':
+      if (!name) {
+        console.error(chalk.red('Error: Worker name is required'));
+        console.log(`Usage: ${chalk.cyan('npx atxp paas worker info <name>')}`);
+        process.exit(1);
+      }
+      await workerInfoCommand(name);
+      break;
+
     case 'logs':
       if (!name) {
         console.error(chalk.red('Error: Worker name is required'));
@@ -189,7 +199,7 @@ async function handleWorkerCommand(
 
     default:
       console.error(chalk.red(`Unknown worker command: ${subCommand}`));
-      console.log('Available commands: deploy, list, logs, delete');
+      console.log('Available commands: deploy, list, info, logs, delete');
       process.exit(1);
   }
 }

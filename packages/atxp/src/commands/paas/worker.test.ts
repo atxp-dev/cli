@@ -20,6 +20,7 @@ import {
   workerListCommand,
   workerLogsCommand,
   workerDeleteCommand,
+  workerInfoCommand,
   parseEnvArg,
   parseEnvFile,
   validateEnvVarName,
@@ -689,4 +690,96 @@ describe('Worker Commands', () => {
       });
     });
   });
+
+  describe('workerInfoCommand', () => {
+    it('should get worker info and display details', async () => {
+      const mockResponse = JSON.stringify({
+        success: true,
+        worker: {
+          name: 'my-worker',
+          url: 'https://my-worker.example.com',
+          createdOn: '2024-01-01T00:00:00Z',
+          modifiedOn: '2024-01-02T00:00:00Z',
+          bindings: {
+            databases: [],
+            storage: [],
+            analytics: [],
+            envVars: [],
+            secrets: [],
+          },
+        },
+      });
+      vi.mocked(callTool).mockResolvedValue(mockResponse);
+
+      await workerInfoCommand('my-worker');
+
+      expect(callTool).toHaveBeenCalledWith('paas.mcp.atxp.ai', 'get_worker_info', {
+        name: 'my-worker',
+      });
+      expect(console.log).toHaveBeenCalled();
+    });
+
+    it('should display all binding types when present', async () => {
+      const mockResponse = JSON.stringify({
+        success: true,
+        worker: {
+          name: 'my-worker',
+          url: 'https://my-worker.example.com',
+          createdOn: '2024-01-01T00:00:00Z',
+          modifiedOn: '2024-01-02T00:00:00Z',
+          bindings: {
+            databases: [{ binding: 'DB', databaseId: 'db-123' }],
+            storage: [{ binding: 'BUCKET', bucketName: 'my-bucket' }],
+            analytics: [{ binding: 'ANALYTICS', dataset: 'my-dataset' }],
+            envVars: ['API_URL', 'DEBUG'],
+            secrets: ['API_KEY'],
+          },
+        },
+      });
+      vi.mocked(callTool).mockResolvedValue(mockResponse);
+
+      await workerInfoCommand('my-worker');
+
+      expect(callTool).toHaveBeenCalledWith('paas.mcp.atxp.ai', 'get_worker_info', {
+        name: 'my-worker',
+      });
+      expect(console.log).toHaveBeenCalled();
+    });
+
+    it('should call process.exit when worker is not found', async () => {
+      const mockResponse = JSON.stringify({
+        success: false,
+        error: 'Worker not found',
+      });
+      vi.mocked(callTool).mockResolvedValue(mockResponse);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      await workerInfoCommand('nonexistent-worker');
+
+      expect(console.error).toHaveBeenCalled();
+      expect(exitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should handle error response without error message', async () => {
+      const mockResponse = JSON.stringify({
+        success: false,
+      });
+      vi.mocked(callTool).mockResolvedValue(mockResponse);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+
+      await workerInfoCommand('my-worker');
+
+      expect(console.error).toHaveBeenCalled();
+      expect(exitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should fallback to raw output when JSON parsing fails', async () => {
+      vi.mocked(callTool).mockResolvedValue('not valid json');
+
+      await workerInfoCommand('my-worker');
+
+      expect(console.log).toHaveBeenCalledWith('not valid json');
+    });
+  });
 });
+
