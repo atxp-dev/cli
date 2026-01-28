@@ -391,3 +391,93 @@ export async function workerDeleteCommand(name: string): Promise<void> {
   const result = await callTool(SERVER, 'delete_worker', { name });
   console.log(result);
 }
+
+interface WorkerInfoResponse {
+  success: boolean;
+  error?: string;
+  worker?: {
+    name: string;
+    url: string;
+    createdOn: string;
+    modifiedOn: string;
+    bindings: {
+      databases: Array<{ binding: string; databaseId: string }>;
+      storage: Array<{ binding: string; bucketName: string }>;
+      analytics: Array<{ binding: string; dataset: string }>;
+      envVars: string[];
+      secrets: string[];
+    };
+  };
+}
+
+export async function workerInfoCommand(name: string): Promise<void> {
+  const result = await callTool(SERVER, 'get_worker_info', { name });
+
+  try {
+    const data = JSON.parse(result) as WorkerInfoResponse;
+
+    if (!data.success || !data.worker) {
+      console.error(chalk.red(`Error: ${data.error || 'Worker not found'}`));
+      process.exit(1);
+    }
+
+    const worker = data.worker;
+
+    console.log(chalk.bold(`Worker: ${worker.name}`));
+    console.log();
+    console.log(`${chalk.gray('URL:')} ${worker.url}`);
+    console.log(`${chalk.gray('Created:')} ${worker.createdOn}`);
+    console.log(`${chalk.gray('Modified:')} ${worker.modifiedOn}`);
+
+    const { bindings } = worker;
+    const hasBindings =
+      bindings.databases.length > 0 ||
+      bindings.storage.length > 0 ||
+      bindings.analytics.length > 0 ||
+      bindings.envVars.length > 0 ||
+      bindings.secrets.length > 0;
+
+    if (hasBindings) {
+      console.log();
+      console.log(chalk.bold('Bindings:'));
+
+      if (bindings.databases.length > 0) {
+        console.log(`  ${chalk.cyan('Databases:')}`);
+        for (const db of bindings.databases) {
+          console.log(`    ${db.binding} -> ${chalk.gray(db.databaseId)}`);
+        }
+      }
+
+      if (bindings.storage.length > 0) {
+        console.log(`  ${chalk.cyan('Storage:')}`);
+        for (const bucket of bindings.storage) {
+          console.log(`    ${bucket.binding} -> ${chalk.gray(bucket.bucketName)}`);
+        }
+      }
+
+      if (bindings.analytics.length > 0) {
+        console.log(`  ${chalk.cyan('Analytics:')}`);
+        for (const analytics of bindings.analytics) {
+          console.log(`    ${analytics.binding} -> ${chalk.gray(analytics.dataset)}`);
+        }
+      }
+
+      if (bindings.envVars.length > 0) {
+        console.log(`  ${chalk.cyan('Environment Variables:')}`);
+        for (const envVar of bindings.envVars) {
+          console.log(`    ${envVar}`);
+        }
+      }
+
+      if (bindings.secrets.length > 0) {
+        console.log(`  ${chalk.cyan('Secrets:')}`);
+        for (const secret of bindings.secrets) {
+          console.log(`    ${secret}`);
+        }
+      }
+    }
+  } catch {
+    // If parsing fails, just output the raw result
+    console.log(result);
+  }
+}
