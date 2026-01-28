@@ -33,6 +33,11 @@ import {
   analyticsEventsCommand,
   analyticsStatsCommand,
 } from './analytics.js';
+import {
+  secretsSetCommand,
+  secretsListCommand,
+  secretsDeleteCommand,
+} from './secrets.js';
 
 interface PaasOptions {
   code?: string;
@@ -112,6 +117,12 @@ function showPaasHelp(): void {
   console.log('  ' + chalk.cyan('paas analytics stats') + '             Get analytics statistics');
   console.log();
 
+  console.log(chalk.bold('Secrets Commands:'));
+  console.log('  ' + chalk.cyan('paas secrets set') + ' ' + chalk.yellow('<worker> KEY=VALUE') + '  Set a secret');
+  console.log('  ' + chalk.cyan('paas secrets list') + ' ' + chalk.yellow('<worker>') + '          List secrets');
+  console.log('  ' + chalk.cyan('paas secrets delete') + ' ' + chalk.yellow('<worker> <key>') + '   Delete a secret');
+  console.log();
+
   console.log(chalk.bold('Examples:'));
   console.log('  npx atxp paas worker deploy my-api --code ./worker.js');
   console.log('  npx atxp paas db create my-database');
@@ -119,6 +130,7 @@ function showPaasHelp(): void {
   console.log('  npx atxp paas storage upload my-bucket images/logo.png --file ./logo.png');
   console.log('  npx atxp paas dns add example.com');
   console.log('  npx atxp paas dns connect example.com my-api');
+  console.log('  npx atxp paas secrets set my-api API_KEY=sk-abc123');
 }
 
 export async function paasCommand(args: string[], options: PaasOptions): Promise<void> {
@@ -152,9 +164,13 @@ export async function paasCommand(args: string[], options: PaasOptions): Promise
       await handleAnalyticsCommand(subCommand, restArgs, options);
       break;
 
+    case 'secrets':
+      await handleSecretsCommand(subCommand, restArgs);
+      break;
+
     default:
       console.error(chalk.red(`Unknown PAAS category: ${category}`));
-      console.log('Available categories: worker, db, storage, dns, analytics');
+      console.log('Available categories: worker, db, storage, dns, analytics, secrets');
       console.log(`Run ${chalk.cyan('npx atxp paas help')} for usage information.`);
       process.exit(1);
   }
@@ -470,6 +486,51 @@ async function handleAnalyticsCommand(
     default:
       console.error(chalk.red(`Unknown analytics command: ${subCommand}`));
       console.log('Available commands: query, events, stats');
+      process.exit(1);
+  }
+}
+
+async function handleSecretsCommand(
+  subCommand: string,
+  args: string[]
+): Promise<void> {
+  const workerName = args[0];
+
+  switch (subCommand) {
+    case 'set': {
+      const keyValuePair = args[1];
+      if (!workerName || !keyValuePair) {
+        console.error(chalk.red('Error: Worker name and KEY=VALUE are required'));
+        console.log(`Usage: ${chalk.cyan('npx atxp paas secrets set <worker> KEY=VALUE')}`);
+        process.exit(1);
+      }
+      await secretsSetCommand(workerName, keyValuePair);
+      break;
+    }
+
+    case 'list':
+      if (!workerName) {
+        console.error(chalk.red('Error: Worker name is required'));
+        console.log(`Usage: ${chalk.cyan('npx atxp paas secrets list <worker>')}`);
+        process.exit(1);
+      }
+      await secretsListCommand(workerName);
+      break;
+
+    case 'delete': {
+      const key = args[1];
+      if (!workerName || !key) {
+        console.error(chalk.red('Error: Worker name and secret key are required'));
+        console.log(`Usage: ${chalk.cyan('npx atxp paas secrets delete <worker> <key>')}`);
+        process.exit(1);
+      }
+      await secretsDeleteCommand(workerName, key);
+      break;
+    }
+
+    default:
+      console.error(chalk.red(`Unknown secrets command: ${subCommand}`));
+      console.log('Available commands: set, list, delete');
       process.exit(1);
   }
 }
