@@ -98,8 +98,8 @@ describe('PAAS Help Coverage', () => {
     for (const [key, help] of Object.entries(COMMAND_HELP)) {
       if (help.related) {
         for (const related of help.related) {
-          // Convert "worker list" to "worker.list" for lookup
-          const relatedKey = related.replace(' ', '.');
+          // Convert "worker list" to "worker.list" and "dns record create" to "dns.record.create"
+          const relatedKey = related.replaceAll(' ', '.');
           expect(
             allKeys.has(relatedKey),
             `${key} references non-existent related command: ${related} (looked for ${relatedKey})`
