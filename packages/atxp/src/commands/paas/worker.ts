@@ -15,12 +15,12 @@ interface WorkerDeployOptions {
 }
 
 // Base reserved env var names that conflict with existing bindings
-const BASE_RESERVED_ENV_NAMES = ['DB', 'BUCKET', 'USER_NAMESPACE'];
+export const BASE_RESERVED_ENV_NAMES = ['DB', 'BUCKET', 'USER_NAMESPACE'];
 
 /**
  * Get reserved env var names based on analytics binding configuration
  */
-function getReservedEnvNames(analyticsBindingName?: string): string[] {
+export function getReservedEnvNames(analyticsBindingName?: string): string[] {
   // If analytics is enabled, add the binding name to reserved list
   // Default binding name is 'ANALYTICS'
   const bindingName = analyticsBindingName || 'ANALYTICS';
@@ -28,13 +28,13 @@ function getReservedEnvNames(analyticsBindingName?: string): string[] {
 }
 
 // Patterns that suggest sensitive data (warn user about plain text storage)
-const SENSITIVE_PATTERNS = [/SECRET/i, /PASSWORD/i, /KEY/i, /TOKEN/i, /CREDENTIAL/i];
+export const SENSITIVE_PATTERNS = [/SECRET/i, /PASSWORD/i, /KEY/i, /TOKEN/i, /CREDENTIAL/i];
 
 /**
  * Validate an environment variable name
  * Must be a valid identifier and not reserved
  */
-function validateEnvVarName(name: string, reservedNames: string[]): { valid: boolean; error?: string } {
+export function validateEnvVarName(name: string, reservedNames: string[]): { valid: boolean; error?: string } {
   // Check if it's a valid identifier (starts with letter or underscore, contains only alphanumeric and underscores)
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
     return { valid: false, error: `Invalid env var name "${name}": must be a valid identifier (letters, numbers, underscores, cannot start with number)` };
@@ -51,7 +51,7 @@ function validateEnvVarName(name: string, reservedNames: string[]): { valid: boo
 /**
  * Parse a KEY=VALUE string into key and value
  */
-function parseEnvArg(arg: string): { key: string; value: string } | null {
+export function parseEnvArg(arg: string): { key: string; value: string } | null {
   const eqIndex = arg.indexOf('=');
   if (eqIndex === -1) {
     return null;
@@ -69,7 +69,7 @@ function parseEnvArg(arg: string): { key: string; value: string } | null {
  * - Empty lines
  * - Quoted values (single or double quotes)
  */
-function parseEnvFile(filePath: string): Record<string, string> {
+export function parseEnvFile(filePath: string): Record<string, string> {
   const absolutePath = path.resolve(filePath);
   if (!fs.existsSync(absolutePath)) {
     throw new Error(`Env file not found: ${absolutePath}`);

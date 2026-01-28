@@ -6,14 +6,14 @@ const SERVER = 'paas.mcp.atxp.ai';
 /**
  * Validate that a secret key follows UPPER_SNAKE_CASE convention
  */
-function isValidSecretKey(key: string): boolean {
+export function isValidSecretKey(key: string): boolean {
   return /^[A-Z][A-Z0-9_]*$/.test(key);
 }
 
 /**
  * Parse KEY=VALUE format into key and value
  */
-function parseKeyValue(input: string): { key: string; value: string } | null {
+export function parseKeyValue(input: string): { key: string; value: string } | null {
   const eqIndex = input.indexOf('=');
   if (eqIndex === -1) {
     return null;
