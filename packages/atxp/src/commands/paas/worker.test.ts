@@ -746,15 +746,18 @@ describe('Worker Commands', () => {
       expect(console.log).toHaveBeenCalled();
     });
 
-    it('should exit with error when worker is not found', async () => {
+    it('should call process.exit when worker is not found', async () => {
       const mockResponse = JSON.stringify({
         success: false,
         error: 'Worker not found',
       });
       vi.mocked(callTool).mockResolvedValue(mockResponse);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
-      await expect(workerInfoCommand('nonexistent-worker')).rejects.toThrow('process.exit called');
+      await workerInfoCommand('nonexistent-worker');
+
       expect(console.error).toHaveBeenCalled();
+      expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
     it('should handle error response without error message', async () => {
@@ -762,9 +765,12 @@ describe('Worker Commands', () => {
         success: false,
       });
       vi.mocked(callTool).mockResolvedValue(mockResponse);
+      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
 
-      await expect(workerInfoCommand('my-worker')).rejects.toThrow('process.exit called');
+      await workerInfoCommand('my-worker');
+
       expect(console.error).toHaveBeenCalled();
+      expect(exitSpy).toHaveBeenCalledWith(1);
     });
 
     it('should fallback to raw output when JSON parsing fails', async () => {
