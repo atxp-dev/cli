@@ -27,6 +27,9 @@ export async function analyticsQueryCommand(options: AnalyticsQueryOptions): Pro
     console.log('Example queries:');
     console.log('  --sql "SELECT blob1 as event, COUNT(*) as count FROM analytics_data GROUP BY blob1"');
     console.log('  --sql "SELECT SUM(double1) as total FROM analytics_data"');
+    console.log();
+    console.log('Note: Use "analytics_data" as the table name - it will be replaced automatically.');
+    console.log('Time filtering (default 24h) is applied unless your query includes "timestamp".');
     process.exit(1);
   }
 
