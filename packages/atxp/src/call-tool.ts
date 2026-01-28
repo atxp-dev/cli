@@ -1,6 +1,15 @@
 import { atxpClient, ATXPAccount } from '@atxp/client';
 import chalk from 'chalk';
 import { getConnection } from './config.js';
+import { FileOAuthDb } from './file-oauth-db.js';
+
+let oAuthDb: FileOAuthDb | null = null;
+function getOAuthDb(): FileOAuthDb {
+  if (!oAuthDb) {
+    oAuthDb = new FileOAuthDb();
+  }
+  return oAuthDb;
+}
 
 export interface ToolResult {
   content: Array<{ type: string; text?: string; data?: string; mimeType?: string }>;
@@ -23,6 +32,7 @@ export async function callTool(
     const client = await atxpClient({
       mcpServer: `https://${server}`,
       account: new ATXPAccount(connection),
+      oAuthDb: getOAuthDb(),
     });
 
     const result = (await client.callTool({
