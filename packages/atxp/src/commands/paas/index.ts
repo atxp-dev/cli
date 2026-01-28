@@ -72,6 +72,8 @@ interface PaasOptions {
   enableAnalytics?: boolean | string;
   env?: string[];
   envFile?: string;
+  follow?: boolean;
+  interval?: number;
 }
 
 export async function paasCommand(args: string[], options: PaasOptions): Promise<void> {
@@ -171,6 +173,8 @@ async function handleWorkerCommand(
         limit: options.limit,
         level: options.level,
         since: options.since,
+        follow: options.follow,
+        interval: options.interval,
       });
       break;
 
