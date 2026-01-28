@@ -58,6 +58,8 @@ interface PaasOptions {
   event?: string;
   groupBy?: string;
   enableAnalytics?: boolean;
+  env?: string[];
+  envFile?: string;
 }
 
 function showPaasHelp(): void {
@@ -67,6 +69,12 @@ function showPaasHelp(): void {
 
   console.log(chalk.bold('Worker Commands:'));
   console.log('  ' + chalk.cyan('paas worker deploy') + ' ' + chalk.yellow('<name>') + '      Deploy a worker');
+  console.log('    ' + chalk.gray('--code <file>') + '         Path to worker code file');
+  console.log('    ' + chalk.gray('--db <binding:name>') + '   Bind a database (repeatable)');
+  console.log('    ' + chalk.gray('--bucket <binding:name>') + ' Bind a storage bucket (repeatable)');
+  console.log('    ' + chalk.gray('--env KEY=VALUE') + '       Set environment variable (repeatable)');
+  console.log('    ' + chalk.gray('--env-file <path>') + '     Load env vars from file');
+  console.log('    ' + chalk.gray('--enable-analytics') + '    Enable Analytics Engine binding');
   console.log('  ' + chalk.cyan('paas worker list') + '                 List all workers');
   console.log('  ' + chalk.cyan('paas worker logs') + ' ' + chalk.yellow('<name>') + '        Get worker logs');
   console.log('  ' + chalk.cyan('paas worker delete') + ' ' + chalk.yellow('<name>') + '      Delete a worker');
@@ -171,6 +179,8 @@ async function handleWorkerCommand(
         db: options.db,
         bucket: options.bucket,
         enableAnalytics: options.enableAnalytics,
+        env: options.env,
+        envFile: options.envFile,
       });
       break;
 

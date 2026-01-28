@@ -10,6 +10,92 @@ interface WorkerDeployOptions {
   db?: string[];
   bucket?: string[];
   enableAnalytics?: boolean;
+  env?: string[];
+  envFile?: string;
+}
+
+// Reserved env var names that conflict with existing bindings
+const RESERVED_ENV_NAMES = ['DB', 'BUCKET', 'ANALYTICS', 'USER_NAMESPACE'];
+
+// Patterns that suggest sensitive data (warn user about plain text storage)
+const SENSITIVE_PATTERNS = [/SECRET/i, /PASSWORD/i, /KEY/i, /TOKEN/i, /CREDENTIAL/i];
+
+/**
+ * Validate an environment variable name
+ * Must be a valid identifier and not reserved
+ */
+function validateEnvVarName(name: string): { valid: boolean; error?: string } {
+  // Check if it's a valid identifier (starts with letter or underscore, contains only alphanumeric and underscores)
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+    return { valid: false, error: `Invalid env var name "${name}": must be a valid identifier (letters, numbers, underscores, cannot start with number)` };
+  }
+
+  // Check if it's reserved
+  if (RESERVED_ENV_NAMES.includes(name.toUpperCase())) {
+    return { valid: false, error: `Reserved env var name "${name}": conflicts with existing bindings (${RESERVED_ENV_NAMES.join(', ')})` };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Parse a KEY=VALUE string into key and value
+ */
+function parseEnvArg(arg: string): { key: string; value: string } | null {
+  const eqIndex = arg.indexOf('=');
+  if (eqIndex === -1) {
+    return null;
+  }
+  const key = arg.slice(0, eqIndex);
+  const value = arg.slice(eqIndex + 1);
+  return { key, value };
+}
+
+/**
+ * Parse a .env file into a key-value record
+ * Supports:
+ * - KEY=VALUE format
+ * - Comments starting with #
+ * - Empty lines
+ * - Quoted values (single or double quotes)
+ */
+function parseEnvFile(filePath: string): Record<string, string> {
+  const absolutePath = path.resolve(filePath);
+  if (!fs.existsSync(absolutePath)) {
+    throw new Error(`Env file not found: ${absolutePath}`);
+  }
+
+  const content = fs.readFileSync(absolutePath, 'utf-8');
+  const result: Record<string, string> = {};
+
+  for (const line of content.split('\n')) {
+    const trimmed = line.trim();
+
+    // Skip empty lines and comments
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    const eqIndex = trimmed.indexOf('=');
+    if (eqIndex === -1) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, eqIndex).trim();
+    let value = trimmed.slice(eqIndex + 1).trim();
+
+    // Remove surrounding quotes if present
+    if ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+
+    if (key) {
+      result[key] = value;
+    }
+  }
+
+  return result;
 }
 
 interface WorkerLogsOptions {
@@ -55,6 +141,51 @@ export async function workerDeployCommand(
     };
   });
 
+  // Process environment variables
+  // Start with env file (lower precedence)
+  const envVars: Record<string, string> = {};
+
+  if (options.envFile) {
+    try {
+      const fileEnvVars = parseEnvFile(options.envFile);
+      Object.assign(envVars, fileEnvVars);
+    } catch (error) {
+      console.error(chalk.red(`Error: ${(error as Error).message}`));
+      process.exit(1);
+    }
+  }
+
+  // Process --env flags (higher precedence, overrides file)
+  if (options.env && options.env.length > 0) {
+    for (const envArg of options.env) {
+      const parsed = parseEnvArg(envArg);
+      if (!parsed) {
+        console.error(chalk.red(`Error: Invalid env var format "${envArg}". Expected KEY=VALUE`));
+        process.exit(1);
+      }
+      envVars[parsed.key] = parsed.value;
+    }
+  }
+
+  // Validate all env var names
+  for (const key of Object.keys(envVars)) {
+    const validation = validateEnvVarName(key);
+    if (!validation.valid) {
+      console.error(chalk.red(`Error: ${validation.error}`));
+      process.exit(1);
+    }
+  }
+
+  // Warn about sensitive-looking variables
+  const sensitiveVars = Object.keys(envVars).filter((key) =>
+    SENSITIVE_PATTERNS.some((pattern) => pattern.test(key))
+  );
+  if (sensitiveVars.length > 0) {
+    console.log(chalk.yellow(`Warning: The following env vars may contain sensitive data and will be stored as plain text:`));
+    console.log(chalk.yellow(`  ${sensitiveVars.join(', ')}`));
+    console.log(chalk.yellow(`  Consider using Cloudflare Secrets for sensitive values.`));
+  }
+
   const args: Record<string, unknown> = { name, code };
   if (databaseBindings && databaseBindings.length > 0) {
     args.database_bindings = databaseBindings;
@@ -64,6 +195,9 @@ export async function workerDeployCommand(
   }
   if (options.enableAnalytics) {
     args.enable_analytics = true;
+  }
+  if (Object.keys(envVars).length > 0) {
+    args.env_vars = envVars;
   }
 
   const result = await callTool(SERVER, 'deploy_worker', args);

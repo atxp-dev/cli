@@ -57,6 +57,8 @@ interface PaasOptions {
   event?: string;
   groupBy?: string;
   enableAnalytics?: boolean;
+  env?: string[];
+  envFile?: string;
 }
 
 // Parse command line arguments
@@ -176,6 +178,8 @@ function parseArgs(): {
     event: getArgValue('--event', ''),
     groupBy: getArgValue('--group-by', ''),
     enableAnalytics: process.argv.includes('--enable-analytics'),
+    env: getAllArgValues('--env'),
+    envFile: getArgValue('--env-file', ''),
   };
 
   // Get PAAS args (everything after 'paas' that doesn't start with -)
