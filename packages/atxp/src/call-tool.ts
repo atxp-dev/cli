@@ -2,6 +2,7 @@ import { atxpClient, ATXPAccount } from '@atxp/client';
 import chalk from 'chalk';
 import { getConnection } from './config.js';
 import { FileOAuthDb } from './file-oauth-db.js';
+import { getCliLogger } from './verbose.js';
 
 let oAuthDb: FileOAuthDb | null = null;
 function getOAuthDb(): FileOAuthDb {
@@ -33,6 +34,7 @@ export async function callTool(
       mcpServer: `https://${server}`,
       account: new ATXPAccount(connection),
       oAuthDb: getOAuthDb(),
+      logger: getCliLogger(),
     });
 
     const result = (await client.callTool({

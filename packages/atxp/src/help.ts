@@ -9,6 +9,10 @@ export function showHelp(): void {
   console.log('  npx atxp <command> [options]');
   console.log();
 
+  console.log(chalk.bold('Global Options:'));
+  console.log('  ' + chalk.yellow('--verbose, -v') + '      ' + 'Enable verbose output (OAuth debug logs)');
+  console.log();
+
   console.log(chalk.bold('Authentication:'));
   console.log('  ' + chalk.cyan('login') + '              ' + 'Log in to ATXP (save connection string)');
   console.log();
