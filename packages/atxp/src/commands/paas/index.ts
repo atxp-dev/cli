@@ -40,6 +40,11 @@ import {
   secretsListCommand,
   secretsDeleteCommand,
 } from './secrets.js';
+import {
+  showPaasOverview,
+  showCategoryHelp,
+  showCommandHelp,
+} from './help.js';
 
 interface PaasOptions {
   code?: string;
@@ -69,81 +74,29 @@ interface PaasOptions {
   envFile?: string;
 }
 
-function showPaasHelp(): void {
-  console.log(chalk.bold('ATXP PAAS Commands'));
-  console.log(chalk.gray('Deploy workers, databases, storage, and more'));
-  console.log();
-
-  console.log(chalk.bold('Worker Commands:'));
-  console.log('  ' + chalk.cyan('paas worker deploy') + ' ' + chalk.yellow('<name>') + '      Deploy a worker');
-  console.log('    ' + chalk.gray('--code <file>') + '         Path to worker code file');
-  console.log('    ' + chalk.gray('--db <binding:name>') + '   Bind a database (repeatable)');
-  console.log('    ' + chalk.gray('--bucket <binding:name>') + ' Bind a storage bucket (repeatable)');
-  console.log('    ' + chalk.gray('--env KEY=VALUE') + '       Set environment variable (repeatable)');
-  console.log('    ' + chalk.gray('--env-file <path>') + '     Load env vars from file');
-  console.log('    ' + chalk.gray('--enable-analytics [NAME]') + ' Enable Analytics Engine binding (default: ANALYTICS)');
-  console.log('  ' + chalk.cyan('paas worker list') + '                 List all workers');
-  console.log('  ' + chalk.cyan('paas worker logs') + ' ' + chalk.yellow('<name>') + '        Get worker logs');
-  console.log('  ' + chalk.cyan('paas worker delete') + ' ' + chalk.yellow('<name>') + '      Delete a worker');
-  console.log();
-
-  console.log(chalk.bold('Database Commands:'));
-  console.log('  ' + chalk.cyan('paas db create') + ' ' + chalk.yellow('<name>') + '          Create a database');
-  console.log('  ' + chalk.cyan('paas db list') + '                     List all databases');
-  console.log('  ' + chalk.cyan('paas db query') + ' ' + chalk.yellow('<database>') + '       Execute SQL query');
-  console.log('  ' + chalk.cyan('paas db delete') + ' ' + chalk.yellow('<name>') + '          Delete a database');
-  console.log();
-
-  console.log(chalk.bold('Storage Commands:'));
-  console.log('  ' + chalk.cyan('paas storage create') + ' ' + chalk.yellow('<name>') + '     Create a bucket');
-  console.log('  ' + chalk.cyan('paas storage list') + '                List all buckets');
-  console.log('  ' + chalk.cyan('paas storage upload') + ' ' + chalk.yellow('<bucket> <key>') + '  Upload a file');
-  console.log('  ' + chalk.cyan('paas storage download') + ' ' + chalk.yellow('<bucket> <key>') + '  Download a file');
-  console.log('  ' + chalk.cyan('paas storage files') + ' ' + chalk.yellow('<bucket>') + '    List files in bucket');
-  console.log('  ' + chalk.cyan('paas storage delete-bucket') + ' ' + chalk.yellow('<name>') + '  Delete a bucket');
-  console.log('  ' + chalk.cyan('paas storage delete-file') + ' ' + chalk.yellow('<bucket> <key>') + '  Delete a file');
-  console.log();
-
-  console.log(chalk.bold('DNS Commands:'));
-  console.log('  ' + chalk.cyan('paas dns add') + ' ' + chalk.yellow('<domain>') + '          Add a domain');
-  console.log('  ' + chalk.cyan('paas dns list') + '                    List all domains');
-  console.log('  ' + chalk.cyan('paas dns record create') + ' ' + chalk.yellow('<domain>') + ' Create DNS record');
-  console.log('  ' + chalk.cyan('paas dns record list') + ' ' + chalk.yellow('<domain>') + '   List DNS records');
-  console.log('  ' + chalk.cyan('paas dns record delete') + ' ' + chalk.yellow('<domain> <id>') + '  Delete DNS record');
-  console.log('  ' + chalk.cyan('paas dns connect') + ' ' + chalk.yellow('<domain> <worker>') + '  Connect domain to worker');
-  console.log();
-
-  console.log(chalk.bold('Analytics Commands:'));
-  console.log('  ' + chalk.cyan('paas analytics list') + '              List analytics datasets');
-  console.log('  ' + chalk.cyan('paas analytics schema') + ' ' + chalk.yellow('<dataset>') + '  Show dataset columns');
-  console.log('  ' + chalk.cyan('paas analytics query') + '             Query analytics data');
-  console.log('  ' + chalk.cyan('paas analytics events') + '            List analytics events');
-  console.log('  ' + chalk.cyan('paas analytics stats') + '             Get analytics statistics');
-  console.log();
-
-  console.log(chalk.bold('Secrets Commands:'));
-  console.log('  ' + chalk.cyan('paas secrets set') + ' ' + chalk.yellow('<worker> KEY=VALUE') + '  Set a secret');
-  console.log('  ' + chalk.cyan('paas secrets list') + ' ' + chalk.yellow('<worker>') + '          List secrets');
-  console.log('  ' + chalk.cyan('paas secrets delete') + ' ' + chalk.yellow('<worker> <key>') + '   Delete a secret');
-  console.log();
-
-  console.log(chalk.bold('Examples:'));
-  console.log('  npx atxp paas worker deploy my-api --code ./worker.js');
-  console.log('  npx atxp paas db create my-database');
-  console.log('  npx atxp paas db query my-database --sql "SELECT * FROM users"');
-  console.log('  npx atxp paas storage upload my-bucket images/logo.png --file ./logo.png');
-  console.log('  npx atxp paas dns add example.com');
-  console.log('  npx atxp paas dns connect example.com my-api');
-  console.log('  npx atxp paas secrets set my-api API_KEY=sk-abc123');
-}
-
 export async function paasCommand(args: string[], options: PaasOptions): Promise<void> {
+  const helpRequested = process.argv.includes('--help') || process.argv.includes('-h');
   const category = args[0];
   const subCommand = args[1];
   const restArgs = args.slice(2);
 
-  if (!category || category === 'help') {
-    showPaasHelp();
+  // Handle help at various levels
+  if (helpRequested || !category || category === 'help') {
+    if (!category || category === 'help') {
+      // atxp paas --help OR atxp paas help
+      showPaasOverview();
+    } else if (!subCommand || subCommand === 'help') {
+      // atxp paas worker --help OR atxp paas worker help
+      showCategoryHelp(category);
+    } else {
+      // atxp paas worker deploy --help
+      // For dns record subcommands, check if there's a third arg
+      if (category === 'dns' && subCommand === 'record' && restArgs[0]) {
+        showCommandHelp(category, subCommand, restArgs[0]);
+      } else {
+        showCommandHelp(category, subCommand);
+      }
+    }
     return;
   }
 
