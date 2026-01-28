@@ -10,6 +10,8 @@ import {
   analyticsQueryCommand,
   analyticsEventsCommand,
   analyticsStatsCommand,
+  analyticsListCommand,
+  analyticsSchemaCommand,
 } from './analytics.js';
 
 describe('Analytics Commands', () => {
@@ -144,6 +146,34 @@ describe('Analytics Commands', () => {
       await expect(analyticsStatsCommand({ range: 'invalid' })).rejects.toThrow(
         'process.exit called'
       );
+      expect(console.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('analyticsListCommand', () => {
+    it('should list all analytics datasets', async () => {
+      vi.mocked(callTool).mockResolvedValue('{"datasets": ["events", "page_views"]}');
+
+      await analyticsListCommand();
+
+      expect(callTool).toHaveBeenCalledWith('paas.mcp.atxp.ai', 'list_analytics_datasets', {});
+      expect(console.log).toHaveBeenCalledWith('{"datasets": ["events", "page_views"]}');
+    });
+  });
+
+  describe('analyticsSchemaCommand', () => {
+    it('should get schema for a dataset', async () => {
+      vi.mocked(callTool).mockResolvedValue('{"columns": ["timestamp", "event_name", "user_id"]}');
+
+      await analyticsSchemaCommand({ dataset: 'events' });
+
+      expect(callTool).toHaveBeenCalledWith('paas.mcp.atxp.ai', 'get_dataset_schema', {
+        dataset: 'events',
+      });
+    });
+
+    it('should exit with error when dataset is missing', async () => {
+      await expect(analyticsSchemaCommand({})).rejects.toThrow('process.exit called');
       expect(console.error).toHaveBeenCalled();
     });
   });

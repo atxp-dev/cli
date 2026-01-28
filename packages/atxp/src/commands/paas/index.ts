@@ -32,6 +32,8 @@ import {
   analyticsQueryCommand,
   analyticsEventsCommand,
   analyticsStatsCommand,
+  analyticsListCommand,
+  analyticsSchemaCommand,
 } from './analytics.js';
 import {
   secretsSetCommand,
@@ -112,6 +114,8 @@ function showPaasHelp(): void {
   console.log();
 
   console.log(chalk.bold('Analytics Commands:'));
+  console.log('  ' + chalk.cyan('paas analytics list') + '              List analytics datasets');
+  console.log('  ' + chalk.cyan('paas analytics schema') + ' ' + chalk.yellow('<dataset>') + '  Show dataset columns');
   console.log('  ' + chalk.cyan('paas analytics query') + '             Query analytics data');
   console.log('  ' + chalk.cyan('paas analytics events') + '            List analytics events');
   console.log('  ' + chalk.cyan('paas analytics stats') + '             Get analytics statistics');
@@ -457,10 +461,20 @@ async function handleDnsCommand(
 
 async function handleAnalyticsCommand(
   subCommand: string,
-  _args: string[],
+  args: string[],
   options: PaasOptions
 ): Promise<void> {
   switch (subCommand) {
+    case 'list':
+      await analyticsListCommand();
+      break;
+
+    case 'schema': {
+      const dataset = args[0];
+      await analyticsSchemaCommand({ dataset });
+      break;
+    }
+
     case 'query':
       await analyticsQueryCommand({
         sql: options.sql,
@@ -485,7 +499,7 @@ async function handleAnalyticsCommand(
 
     default:
       console.error(chalk.red(`Unknown analytics command: ${subCommand}`));
-      console.log('Available commands: query, events, stats');
+      console.log('Available commands: list, schema, query, events, stats');
       process.exit(1);
   }
 }

@@ -93,3 +93,25 @@ export async function analyticsStatsCommand(options: AnalyticsStatsOptions): Pro
   const result = await callTool(SERVER, 'get_analytics_stats', args);
   console.log(result);
 }
+
+export async function analyticsListCommand(): Promise<void> {
+  const result = await callTool(SERVER, 'list_analytics_datasets', {});
+  console.log(result);
+}
+
+interface AnalyticsSchemaOptions {
+  dataset?: string;
+}
+
+export async function analyticsSchemaCommand(options: AnalyticsSchemaOptions): Promise<void> {
+  if (!options.dataset) {
+    console.error(chalk.red('Error: Dataset name is required'));
+    console.log(`Usage: ${chalk.cyan('npx atxp paas analytics schema <dataset>')}`);
+    console.log();
+    console.log('Run ' + chalk.cyan('npx atxp paas analytics list') + ' to see available datasets.');
+    process.exit(1);
+  }
+
+  const result = await callTool(SERVER, 'get_dataset_schema', { dataset: options.dataset });
+  console.log(result);
+}
