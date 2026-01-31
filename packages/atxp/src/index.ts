@@ -12,6 +12,7 @@ import { imageCommand } from './commands/image.js';
 import { musicCommand } from './commands/music.js';
 import { videoCommand } from './commands/video.js';
 import { xCommand } from './commands/x.js';
+import { emailCommand } from './commands/email.js';
 import { paasCommand } from './commands/paas/index.js';
 
 interface DemoOptions {
@@ -31,6 +32,12 @@ interface LoginOptions {
   force: boolean;
   token?: string;
   qr?: boolean;
+}
+
+interface EmailOptions {
+  to?: string;
+  subject?: string;
+  body?: string;
 }
 
 interface PaasOptions {
@@ -70,6 +77,7 @@ function parseArgs(): {
   demoOptions: DemoOptions;
   createOptions: CreateOptions;
   loginOptions: LoginOptions;
+  emailOptions: EmailOptions;
   paasOptions: PaasOptions;
   paasArgs: string[];
   toolArgs: string;
@@ -77,14 +85,15 @@ function parseArgs(): {
   const command = process.argv[2];
   const subCommand = process.argv[3];
 
-  // Check for help flags early - but NOT for paas commands (they handle --help internally)
+  // Check for help flags early - but NOT for paas or email commands (they handle --help internally)
   const helpFlag = process.argv.includes('--help') || process.argv.includes('-h');
-  if (helpFlag && command !== 'paas') {
+  if (helpFlag && command !== 'paas' && command !== 'email') {
     return {
       command: 'help',
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
       createOptions: { framework: undefined, appName: undefined, git: undefined },
       loginOptions: { force: false },
+      emailOptions: {},
       paasOptions: {},
       paasArgs: [],
       toolArgs: '',
@@ -200,19 +209,27 @@ function parseArgs(): {
     ? process.argv.slice(3).filter((arg) => !arg.startsWith('-'))
     : [];
 
+  // Parse email options
+  const emailOptions: EmailOptions = {
+    to: getArgValue('--to', ''),
+    subject: getArgValue('--subject', ''),
+    body: getArgValue('--body', ''),
+  };
+
   return {
     command,
     subCommand,
     demoOptions: { port, dir, verbose, refresh },
     createOptions: { framework, appName, git },
     loginOptions: { force, token, qr },
+    emailOptions,
     paasOptions,
     paasArgs,
     toolArgs,
   };
 }
 
-const { command, subCommand, demoOptions, createOptions, loginOptions, paasOptions, paasArgs, toolArgs } = parseArgs();
+const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, paasOptions, paasArgs, toolArgs } = parseArgs();
 
 // Detect if we're in create mode (npm create atxp or npx atxp create)
 const isCreateMode =
@@ -282,6 +299,10 @@ async function main() {
 
     case 'x':
       await xCommand(toolArgs);
+      break;
+
+    case 'email':
+      await emailCommand(subCommand || '', emailOptions);
       break;
 
     case 'paas':

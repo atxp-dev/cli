@@ -23,6 +23,7 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('music') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate music');
   console.log('  ' + chalk.cyan('video') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate a video');
   console.log('  ' + chalk.cyan('x') + ' ' + chalk.yellow('<query>') + '        ' + 'Search X/Twitter');
+  console.log('  ' + chalk.cyan('email') + ' ' + chalk.yellow('<command>') + '   ' + 'Send and receive emails');
   console.log();
 
   console.log(chalk.bold('PAAS (Platform as a Service):'));
@@ -74,6 +75,8 @@ export function showHelp(): void {
   console.log('  npx atxp music "relaxing piano"        # Generate music');
   console.log('  npx atxp video "ocean waves"           # Generate a video');
   console.log('  npx atxp x "trending topics"           # Search X/Twitter');
+  console.log('  npx atxp email inbox                   # Check your email inbox');
+  console.log('  npx atxp email send --to user@example.com --subject "Hi" --body "Hello!"');
   console.log('  npx atxp dev demo                      # Run the demo');
   console.log('  npx atxp dev create my-app             # Create a new project');
   console.log();

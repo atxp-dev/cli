@@ -1,6 +1,6 @@
 ---
 name: atxp
-description: Access ATXP paid API tools for web search, AI image generation, music creation, video generation, and X/Twitter search. Use when users need real-time web search, AI-generated media (images, music, video), or X/Twitter search. Requires authentication via `npx atxp login`.
+description: Access ATXP paid API tools for web search, AI image generation, music creation, video generation, X/Twitter search, and email. Use when users need real-time web search, AI-generated media (images, music, video), X/Twitter search, or to send/receive emails. Requires authentication via `npx atxp login`.
 ---
 
 # ATXP Tools
@@ -27,6 +27,32 @@ source ~/.atxp/config
 | `npx atxp music <prompt>` | AI music generation |
 | `npx atxp video <prompt>` | AI video generation |
 | `npx atxp x <query>` | X/Twitter search |
+| `npx atxp email inbox` | Check your email inbox (FREE) |
+| `npx atxp email send <options>` | Send an email ($0.01/email) |
+
+## Email
+
+Each ATXP user gets a unique email address: `{user_id}@atxp.email`
+
+### Check Inbox
+```bash
+npx atxp email inbox
+```
+
+### Send Email
+```bash
+npx atxp email send --to <email> --subject <subject> --body <body>
+```
+
+**Send Options:**
+- `--to` - Recipient email address (required)
+- `--subject` - Email subject line (required)
+- `--body` - Email body content (required)
+
+**Example:**
+```bash
+npx atxp email send --to user@example.com --subject "Hello" --body "Hi there!"
+```
 
 ## PaaS Tools
 
@@ -63,4 +89,5 @@ const result = await client.callTool({
 | `music.mcp.atxp.ai` | `music_create` |
 | `video.mcp.atxp.ai` | `create_video` |
 | `x-live-search.mcp.atxp.ai` | `x_live_search` |
+| `email.mcp.atxp.ai` | `email_check_inbox`, `email_send_email` |
 | `paas.mcp.atxp.ai` | PaaS tools (see `atxp-paas` skill) |
