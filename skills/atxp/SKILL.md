@@ -28,6 +28,7 @@ source ~/.atxp/config
 | `npx atxp video <prompt>` | AI video generation |
 | `npx atxp x <query>` | X/Twitter search |
 | `npx atxp email inbox` | Check your email inbox (FREE) |
+| `npx atxp email read <messageId>` | Read a specific message (FREE) |
 | `npx atxp email send <options>` | Send an email ($0.01/email) |
 
 ## Email
@@ -38,6 +39,13 @@ Each ATXP user gets a unique email address: `{user_id}@atxp.email`
 ```bash
 npx atxp email inbox
 ```
+Returns message metadata (from, subject, date, messageId). Use `email read` to get full message content.
+
+### Read Message
+```bash
+npx atxp email read <messageId>
+```
+Retrieves the full content of a specific message including the body. Get the messageId from `email inbox` output.
 
 ### Send Email
 ```bash
@@ -89,5 +97,5 @@ const result = await client.callTool({
 | `music.mcp.atxp.ai` | `music_create` |
 | `video.mcp.atxp.ai` | `create_video` |
 | `x-live-search.mcp.atxp.ai` | `x_live_search` |
-| `email.mcp.atxp.ai` | `email_check_inbox`, `email_send_email` |
+| `email.mcp.atxp.ai` | `email_check_inbox`, `email_get_message`, `email_send_email` |
 | `paas.mcp.atxp.ai` | PaaS tools (see `atxp-paas` skill) |

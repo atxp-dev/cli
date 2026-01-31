@@ -76,6 +76,7 @@ export function showHelp(): void {
   console.log('  npx atxp video "ocean waves"           # Generate a video');
   console.log('  npx atxp x "trending topics"           # Search X/Twitter');
   console.log('  npx atxp email inbox                   # Check your email inbox');
+  console.log('  npx atxp email read <messageId>        # Read a specific message');
   console.log('  npx atxp email send --to user@example.com --subject "Hi" --body "Hello!"');
   console.log('  npx atxp dev demo                      # Run the demo');
   console.log('  npx atxp dev create my-app             # Create a new project');

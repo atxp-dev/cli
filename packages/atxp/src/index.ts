@@ -302,7 +302,8 @@ async function main() {
       break;
 
     case 'email':
-      await emailCommand(subCommand || '', emailOptions);
+      // For 'email read <messageId>', the messageId is in argv[4]
+      await emailCommand(subCommand || '', emailOptions, process.argv[4]);
       break;
 
     case 'paas':
