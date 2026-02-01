@@ -116,6 +116,11 @@ async function readMessage(messageId?: string): Promise<void> {
       process.exit(1);
     }
 
+    if (parsed.inboxAddress) {
+      console.log(chalk.bold('Your inbox: ') + chalk.cyan(parsed.inboxAddress));
+      console.log();
+    }
+
     const msg = parsed.message;
     console.log(chalk.bold('From: ') + msg.from);
     console.log(chalk.bold('To: ') + (Array.isArray(msg.to) ? msg.to.join(', ') : msg.to));
@@ -172,6 +177,9 @@ async function sendEmail(options: EmailOptions): Promise<void> {
     }
 
     console.log(chalk.green('Email sent successfully!'));
+    if (parsed.inboxAddress) {
+      console.log(chalk.bold('Sent from: ') + chalk.cyan(parsed.inboxAddress));
+    }
     if (parsed.messageId) {
       console.log(chalk.gray('Message ID: ' + parsed.messageId));
     }
