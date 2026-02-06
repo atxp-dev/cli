@@ -119,6 +119,53 @@ describe('Tool Commands', () => {
     });
   });
 
+  describe('balance command', () => {
+    const BALANCE_URL = 'https://accounts.atxp.ai/balance';
+
+    it('should have correct balance URL', () => {
+      expect(BALANCE_URL).toBe('https://accounts.atxp.ai/balance');
+    });
+
+    it('should extract connection_token from connection string', () => {
+      const getConnectionToken = (connectionString: string): string | null => {
+        try {
+          const url = new URL(connectionString);
+          return url.searchParams.get('connection_token');
+        } catch {
+          return null;
+        }
+      };
+
+      expect(getConnectionToken('https://accounts.atxp.ai?connection_token=abc123')).toBe('abc123');
+      expect(getConnectionToken('https://accounts.atxp.ai?connection_token=test-token-xyz')).toBe('test-token-xyz');
+      expect(getConnectionToken('invalid')).toBeNull();
+      expect(getConnectionToken('https://accounts.atxp.ai')).toBeNull();
+    });
+
+    it('should construct Basic Auth credentials correctly', () => {
+      const token = 'test-token';
+      const credentials = Buffer.from(`${token}:`).toString('base64');
+      expect(credentials).toBe(Buffer.from('test-token:').toString('base64'));
+      // Token as username, empty password
+      expect(Buffer.from(credentials, 'base64').toString()).toBe('test-token:');
+    });
+
+    it('should compute total balance from usdc and iou', () => {
+      const computeBalance = (data: { balance?: { usdc?: number; iou?: number } }) => {
+        if (!data.balance) return null;
+        const usdc = +(data.balance.usdc || 0);
+        const iou = +(data.balance.iou || 0);
+        return +(usdc + iou).toFixed(2);
+      };
+
+      expect(computeBalance({ balance: { usdc: 10.5, iou: 2.3 } })).toBe(12.8);
+      expect(computeBalance({ balance: { usdc: 5 } })).toBe(5);
+      expect(computeBalance({ balance: { iou: 3.14 } })).toBe(3.14);
+      expect(computeBalance({ balance: {} })).toBe(0);
+      expect(computeBalance({})).toBeNull();
+    });
+  });
+
   describe('common command behavior', () => {
     it('should construct tool arguments correctly', () => {
       const buildArgs = (key: string, value: string) => {

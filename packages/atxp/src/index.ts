@@ -13,6 +13,7 @@ import { musicCommand } from './commands/music.js';
 import { videoCommand } from './commands/video.js';
 import { xCommand } from './commands/x.js';
 import { emailCommand } from './commands/email.js';
+import { balanceCommand } from './commands/balance.js';
 import { paasCommand } from './commands/paas/index.js';
 
 interface DemoOptions {
@@ -304,6 +305,10 @@ async function main() {
     case 'email':
       // For 'email read <messageId>', the messageId is in argv[4]
       await emailCommand(subCommand || '', emailOptions, process.argv[4]);
+      break;
+
+    case 'balance':
+      await balanceCommand();
       break;
 
     case 'paas':
