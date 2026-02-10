@@ -15,6 +15,7 @@ import { xCommand } from './commands/x.js';
 import { emailCommand } from './commands/email.js';
 import { balanceCommand } from './commands/balance.js';
 import { paasCommand } from './commands/paas/index.js';
+import { agentCommand } from './commands/agent.js';
 
 interface DemoOptions {
   port: number;
@@ -88,7 +89,7 @@ function parseArgs(): {
 
   // Check for help flags early - but NOT for paas or email commands (they handle --help internally)
   const helpFlag = process.argv.includes('--help') || process.argv.includes('-h');
-  if (helpFlag && command !== 'paas' && command !== 'email') {
+  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'agent') {
     return {
       command: 'help',
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
@@ -313,6 +314,10 @@ async function main() {
 
     case 'paas':
       await paasCommand(paasArgs, paasOptions);
+      break;
+
+    case 'agent':
+      await agentCommand(subCommand || '');
       break;
 
     case 'dev':

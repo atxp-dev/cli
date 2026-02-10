@@ -25,6 +25,7 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('x') + ' ' + chalk.yellow('<query>') + '        ' + 'Search X/Twitter');
   console.log('  ' + chalk.cyan('email') + ' ' + chalk.yellow('<command>') + '   ' + 'Send and receive emails');
   console.log('  ' + chalk.cyan('balance') + '            ' + 'Check your ATXP account balance');
+  console.log('  ' + chalk.cyan('agent') + ' ' + chalk.yellow('<command>') + '   ' + 'Create and manage agent accounts');
   console.log();
 
   console.log(chalk.bold('PAAS (Platform as a Service):'));
@@ -82,6 +83,11 @@ export function showHelp(): void {
   console.log('  npx atxp balance                       # Check account balance');
   console.log('  npx atxp dev demo                      # Run the demo');
   console.log('  npx atxp dev create my-app             # Create a new project');
+  console.log();
+
+  console.log(chalk.bold('Agent Examples:'));
+  console.log('  npx atxp agent create                  # Create a new agent');
+  console.log('  npx atxp agent list                    # List your agents');
   console.log();
 
   console.log(chalk.bold('PAAS Examples:'));
