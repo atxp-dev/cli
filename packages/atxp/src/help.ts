@@ -86,8 +86,9 @@ export function showHelp(): void {
   console.log();
 
   console.log(chalk.bold('Agent Examples:'));
-  console.log('  npx atxp agent create                  # Create a new agent');
-  console.log('  npx atxp agent list                    # List your agents');
+  console.log('  npx atxp agent create                  # Create a new agent (requires login)');
+  console.log('  npx atxp agent list                    # List your agents (requires login)');
+  console.log('  npx atxp agent register                # Self-register as an agent (no login)');
   console.log();
 
   console.log(chalk.bold('PAAS Examples:'));
