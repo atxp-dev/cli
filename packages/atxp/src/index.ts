@@ -14,6 +14,7 @@ import { videoCommand } from './commands/video.js';
 import { xCommand } from './commands/x.js';
 import { emailCommand } from './commands/email.js';
 import { balanceCommand } from './commands/balance.js';
+import { depositCommand } from './commands/deposit.js';
 import { paasCommand } from './commands/paas/index.js';
 import { agentCommand } from './commands/agent.js';
 
@@ -310,6 +311,10 @@ async function main() {
 
     case 'balance':
       await balanceCommand();
+      break;
+
+    case 'deposit':
+      await depositCommand();
       break;
 
     case 'paas':
