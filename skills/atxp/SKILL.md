@@ -31,7 +31,7 @@ source ~/.atxp/config
 | `npx atxp email read <messageId>` | Read a specific message (FREE) |
 | `npx atxp email send <options>` | Send an email ($0.01/email) |
 | `npx atxp balance` | Check your ATXP account balance (FREE) |
-| `npx atxp deposit` | Show your deposit addresses (FREE) |
+| `npx atxp fund` | Show how to fund your account (FREE) |
 
 ## Balance
 
@@ -40,11 +40,11 @@ Check your ATXP account balance:
 npx atxp balance
 ```
 
-## Deposit Address
+## Fund Your Account
 
-Show your deposit addresses (one per chain, typically Base and Solana). Send USDC to any of these addresses to top up your ATXP account balance.
+Fund your ATXP account via USDC deposit addresses (one per chain, typically Base and Solana) or with credit card and other standard payment methods at https://accounts.atxp.ai/fund.
 ```bash
-npx atxp deposit
+npx atxp fund
 ```
 
 ## Email

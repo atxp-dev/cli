@@ -50,17 +50,23 @@ export async function depositCommand(): Promise<void> {
     const data = await response.json();
 
     if (data.sources && Array.isArray(data.sources) && data.sources.length > 0) {
-      console.log(chalk.bold('Deposit Addresses:'));
+      console.log(chalk.bold('Fund via USDC:'));
       for (const source of data.sources) {
         const chain = source.chain.charAt(0).toUpperCase() + source.chain.slice(1);
         console.log(`  ${chalk.cyan(chain)}: ${source.address}`);
       }
+      console.log();
+      console.log(chalk.bold('Fund via credit card or other payment methods:'));
+      console.log(`  ${chalk.underline('https://accounts.atxp.ai/fund')}`);
     } else {
       console.log(chalk.yellow('No deposit addresses found for this account.'));
+      console.log();
+      console.log(chalk.bold('Fund via credit card or other payment methods:'));
+      console.log(`  ${chalk.underline('https://accounts.atxp.ai/fund')}`);
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(chalk.red(`Error fetching deposit address: ${errorMessage}`));
+    console.error(chalk.red(`Error fetching funding info: ${errorMessage}`));
     process.exit(1);
   }
 }

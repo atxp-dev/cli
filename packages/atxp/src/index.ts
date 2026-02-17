@@ -313,6 +313,7 @@ async function main() {
       await balanceCommand();
       break;
 
+    case 'fund':
     case 'deposit':
       await depositCommand();
       break;

@@ -25,7 +25,7 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('x') + ' ' + chalk.yellow('<query>') + '        ' + 'Search X/Twitter');
   console.log('  ' + chalk.cyan('email') + ' ' + chalk.yellow('<command>') + '   ' + 'Send and receive emails');
   console.log('  ' + chalk.cyan('balance') + '            ' + 'Check your ATXP account balance');
-  console.log('  ' + chalk.cyan('deposit') + '            ' + 'Show your deposit addresses');
+  console.log('  ' + chalk.cyan('fund') + '               ' + 'Show how to fund your account');
   console.log('  ' + chalk.cyan('agent') + ' ' + chalk.yellow('<command>') + '   ' + 'Create and manage agent accounts');
   console.log();
 
@@ -82,7 +82,7 @@ export function showHelp(): void {
   console.log('  npx atxp email read <messageId>        # Read a specific message');
   console.log('  npx atxp email send --to user@example.com --subject "Hi" --body "Hello!"');
   console.log('  npx atxp balance                       # Check account balance');
-  console.log('  npx atxp deposit                       # Show deposit addresses');
+  console.log('  npx atxp fund                          # Show how to fund your account');
   console.log('  npx atxp dev demo                      # Run the demo');
   console.log('  npx atxp dev create my-app             # Create a new project');
   console.log();
