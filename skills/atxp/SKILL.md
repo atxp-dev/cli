@@ -30,6 +30,10 @@ source ~/.atxp/config
 | `npx atxp email inbox` | Check your email inbox (FREE) |
 | `npx atxp email read <messageId>` | Read a specific message (FREE) |
 | `npx atxp email send <options>` | Send an email ($0.01/email) |
+| `npx atxp email reply <messageId> --body <text>` | Reply to an email ($0.01/reply) |
+| `npx atxp email search <query>` | Search emails by subject or sender (FREE) |
+| `npx atxp email delete <messageId>` | Delete an email (FREE) |
+| `npx atxp email get-attachment <options>` | Download an attachment (FREE) |
 | `npx atxp email claim-username <name>` | Claim a username for your email ($1.00) |
 | `npx atxp email release-username` | Release your username (FREE) |
 | `npx atxp balance` | Check your ATXP account balance (FREE) |
@@ -73,13 +77,13 @@ Releases your current username. Your email address reverts to `{user_id}@atxp.em
 ```bash
 npx atxp email inbox
 ```
-Returns message metadata (from, subject, date, messageId). Use `email read` to get full message content.
+Returns message metadata (from, subject, date, messageId, read status). Unread messages are marked. Use `email read` to get full message content (marks the message as read).
 
 ### Read Message
 ```bash
 npx atxp email read <messageId>
 ```
-Retrieves the full content of a specific message including the body. Get the messageId from `email inbox` output.
+Retrieves the full content of a specific message including the body and attachment list. Marks the message as read. Get the messageId from `email inbox` output.
 
 ### Send Email
 ```bash
@@ -91,10 +95,36 @@ npx atxp email send --to <email> --subject <subject> --body <body>
 - `--subject` - Email subject line (required)
 - `--body` - Email body content (required)
 
+Attachments can be sent via the MCP tool `email_send_email` with the `attachments` parameter (base64-encoded).
+
 **Example:**
 ```bash
 npx atxp email send --to user@example.com --subject "Hello" --body "Hi there!"
 ```
+
+### Reply to Email
+```bash
+npx atxp email reply <messageId> --body <body>
+```
+Replies to a message. Automatically populates the To address (original sender), Subject (with Re: prefix), and threading headers (In-Reply-To, References). Costs $0.01 per reply.
+
+### Search Emails
+```bash
+npx atxp email search <query>
+```
+Searches emails by subject or sender address (ILIKE match). Returns matching messages newest first. Free.
+
+### Delete Email
+```bash
+npx atxp email delete <messageId>
+```
+Soft-deletes an email. It will no longer appear in inbox or search results. Free.
+
+### Get Attachment
+```bash
+npx atxp email get-attachment --message <messageId> --index <n>
+```
+Downloads an attachment from a received email. Use `email read` first to see the attachment list and indices. Returns the content as base64. Free.
 
 ## Support
 
@@ -146,5 +176,5 @@ const result = await client.callTool({
 | `music.mcp.atxp.ai` | `music_create` |
 | `video.mcp.atxp.ai` | `create_video` |
 | `x-live-search.mcp.atxp.ai` | `x_live_search` |
-| `email.mcp.atxp.ai` | `email_check_inbox`, `email_get_message`, `email_send_email`, `email_claim_username`, `email_release_username` |
+| `email.mcp.atxp.ai` | `email_check_inbox`, `email_get_message`, `email_send_email`, `email_reply`, `email_search`, `email_delete`, `email_get_attachment`, `email_claim_username`, `email_release_username` |
 | `paas.mcp.atxp.ai` | PaaS tools (see `atxp-paas` skill) |

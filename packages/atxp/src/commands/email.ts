@@ -12,28 +12,44 @@ interface EmailOptions {
 function showEmailHelp(): void {
   console.log(chalk.bold('Email Commands:'));
   console.log();
-  console.log('  ' + chalk.cyan('npx atxp email inbox') + '                    ' + 'Check your inbox');
-  console.log('  ' + chalk.cyan('npx atxp email read') + ' ' + chalk.yellow('<messageId>') + '        ' + 'Read a specific message');
-  console.log('  ' + chalk.cyan('npx atxp email send') + ' ' + chalk.yellow('<options>') + '          ' + 'Send an email');
-  console.log('  ' + chalk.cyan('npx atxp email claim-username') + ' ' + chalk.yellow('<name>') + '  ' + 'Claim a username ($1.00)');
-  console.log('  ' + chalk.cyan('npx atxp email release-username') + '         ' + 'Release your username');
+  console.log('  ' + chalk.cyan('npx atxp email inbox') + '                          ' + 'Check your inbox');
+  console.log('  ' + chalk.cyan('npx atxp email read') + ' ' + chalk.yellow('<messageId>') + '              ' + 'Read a specific message');
+  console.log('  ' + chalk.cyan('npx atxp email send') + ' ' + chalk.yellow('<options>') + '                ' + 'Send an email');
+  console.log('  ' + chalk.cyan('npx atxp email reply') + ' ' + chalk.yellow('<messageId>') + ' ' + chalk.yellow('<options>') + '  ' + 'Reply to a message');
+  console.log('  ' + chalk.cyan('npx atxp email search') + ' ' + chalk.yellow('<query>') + '              ' + 'Search emails');
+  console.log('  ' + chalk.cyan('npx atxp email delete') + ' ' + chalk.yellow('<messageId>') + '           ' + 'Delete a message');
+  console.log('  ' + chalk.cyan('npx atxp email get-attachment') + ' ' + chalk.yellow('<options>') + '     ' + 'Download an attachment');
+  console.log('  ' + chalk.cyan('npx atxp email claim-username') + ' ' + chalk.yellow('<name>') + '        ' + 'Claim a username ($1.00)');
+  console.log('  ' + chalk.cyan('npx atxp email release-username') + '               ' + 'Release your username');
   console.log();
-  console.log(chalk.bold('Send Options:'));
-  console.log('  ' + chalk.yellow('--to') + ' ' + chalk.gray('<email>') + '      ' + 'Recipient email address (required)');
-  console.log('  ' + chalk.yellow('--subject') + ' ' + chalk.gray('<text>') + '  ' + 'Email subject line (required)');
+  console.log(chalk.bold('Send/Reply Options:'));
+  console.log('  ' + chalk.yellow('--to') + ' ' + chalk.gray('<email>') + '      ' + 'Recipient email address (required for send)');
+  console.log('  ' + chalk.yellow('--subject') + ' ' + chalk.gray('<text>') + '  ' + 'Email subject line (required for send)');
   console.log('  ' + chalk.yellow('--body') + ' ' + chalk.gray('<text>') + '     ' + 'Email body content (required)');
+  console.log();
+  console.log(chalk.bold('Get Attachment Options:'));
+  console.log('  ' + chalk.yellow('--message') + ' ' + chalk.gray('<id>') + '    ' + 'Message ID (required)');
+  console.log('  ' + chalk.yellow('--index') + ' ' + chalk.gray('<n>') + '       ' + 'Attachment index, 0-based (required)');
   console.log();
   console.log(chalk.bold('Examples:'));
   console.log('  npx atxp email inbox');
   console.log('  npx atxp email read msg_abc123');
   console.log('  npx atxp email send --to user@example.com --subject "Hello" --body "Hi there!"');
+  console.log('  npx atxp email reply msg_abc123 --body "Thanks for your message!"');
+  console.log('  npx atxp email search "invoice"');
+  console.log('  npx atxp email delete msg_abc123');
+  console.log('  npx atxp email get-attachment --message msg_abc123 --index 0');
   console.log('  npx atxp email claim-username myname');
   console.log('  npx atxp email release-username');
   console.log();
   console.log(chalk.bold('Pricing:'));
   console.log('  Inbox check:     ' + chalk.green('FREE'));
   console.log('  Read message:    ' + chalk.green('FREE'));
+  console.log('  Search:          ' + chalk.green('FREE'));
+  console.log('  Delete:          ' + chalk.green('FREE'));
+  console.log('  Get attachment:  ' + chalk.green('FREE'));
   console.log('  Send email:      ' + chalk.yellow('$0.01 per email'));
+  console.log('  Reply:           ' + chalk.yellow('$0.01 per reply'));
   console.log('  Claim username:  ' + chalk.yellow('$1.00'));
   console.log('  Release username: ' + chalk.green('FREE'));
   console.log();
@@ -59,6 +75,22 @@ export async function emailCommand(subCommand: string, options: EmailOptions, me
 
     case 'send':
       await sendEmail(options);
+      break;
+
+    case 'reply':
+      await replyToEmail(messageId, options);
+      break;
+
+    case 'search':
+      await searchEmails(messageId);
+      break;
+
+    case 'delete':
+      await deleteEmail(messageId);
+      break;
+
+    case 'get-attachment':
+      await getAttachment();
       break;
 
     case 'claim-username':
@@ -102,7 +134,8 @@ async function checkInbox(): Promise<void> {
     console.log();
 
     for (const email of parsed.messages) {
-      console.log(chalk.gray('ID: ' + email.messageId));
+      const readIndicator = email.read === false ? chalk.yellow(' [UNREAD]') : '';
+      console.log(chalk.gray('ID: ' + email.messageId) + readIndicator);
       console.log(chalk.bold('From: ') + email.from);
       console.log(chalk.bold('Subject: ') + email.subject);
       console.log(chalk.bold('Date: ') + email.date);
@@ -154,6 +187,16 @@ async function readMessage(messageId?: string): Promise<void> {
     } else {
       console.log(chalk.gray('(No message body)'));
     }
+
+    if (msg.attachments && msg.attachments.length > 0) {
+      console.log();
+      console.log(chalk.bold(`Attachments (${msg.attachments.length}):`));
+      for (let i = 0; i < msg.attachments.length; i++) {
+        const att = msg.attachments[i];
+        console.log(`  [${i}] ${att.filename} (${att.contentType}, ${att.size} bytes)`);
+      }
+      console.log(chalk.gray('Use `npx atxp email get-attachment --message <id> --index <n>` to download'));
+    }
   } catch {
     // If not JSON, just print raw result
     console.log(result);
@@ -203,6 +246,143 @@ async function sendEmail(options: EmailOptions): Promise<void> {
     }
   } catch {
     // If not JSON, just print raw result
+    console.log(result);
+  }
+}
+
+async function replyToEmail(messageId?: string, options?: EmailOptions): Promise<void> {
+  if (!messageId) {
+    console.error(chalk.red('Error: messageId is required'));
+    console.log(`Usage: ${chalk.cyan('npx atxp email reply <messageId> --body <body>')}`);
+    process.exit(1);
+  }
+
+  const body = options?.body;
+  if (!body) {
+    console.error(chalk.red('Error: --body is required'));
+    console.log(`Usage: ${chalk.cyan('npx atxp email reply <messageId> --body <body>')}`);
+    process.exit(1);
+  }
+
+  const result = await callTool(SERVER, 'email_reply', { messageId, body });
+
+  try {
+    const parsed = JSON.parse(result);
+    if (parsed.status === 'error') {
+      console.error(chalk.red('Error: ' + parsed.errorMessage));
+      process.exit(1);
+    }
+
+    console.log(chalk.green('Reply sent successfully!'));
+    if (parsed.inboxAddress) {
+      console.log(chalk.bold('Sent from: ') + chalk.cyan(parsed.inboxAddress));
+    }
+    if (parsed.messageId) {
+      console.log(chalk.gray('Message ID: ' + parsed.messageId));
+    }
+  } catch {
+    console.log(result);
+  }
+}
+
+async function searchEmails(query?: string): Promise<void> {
+  if (!query) {
+    console.error(chalk.red('Error: search query is required'));
+    console.log(`Usage: ${chalk.cyan('npx atxp email search <query>')}`);
+    process.exit(1);
+  }
+
+  const result = await callTool(SERVER, 'email_search', { query });
+
+  try {
+    const parsed = JSON.parse(result);
+    if (parsed.status === 'error') {
+      console.error(chalk.red('Error: ' + parsed.errorMessage));
+      process.exit(1);
+    }
+
+    console.log(chalk.bold('Search results for: ') + chalk.yellow(query));
+    console.log();
+
+    if (!parsed.messages || parsed.messages.length === 0) {
+      console.log(chalk.gray('No matching messages'));
+      return;
+    }
+
+    console.log(chalk.bold(`${parsed.messages.length} result(s):`));
+    console.log();
+
+    for (const email of parsed.messages) {
+      const readIndicator = email.read === false ? chalk.yellow(' [UNREAD]') : '';
+      console.log(chalk.gray('ID: ' + email.messageId) + readIndicator);
+      console.log(chalk.bold('From: ') + email.from);
+      console.log(chalk.bold('Subject: ') + email.subject);
+      console.log(chalk.bold('Date: ') + email.date);
+      console.log(chalk.gray('─'.repeat(50)));
+    }
+  } catch {
+    console.log(result);
+  }
+}
+
+async function deleteEmail(messageId?: string): Promise<void> {
+  if (!messageId) {
+    console.error(chalk.red('Error: messageId is required'));
+    console.log(`Usage: ${chalk.cyan('npx atxp email delete <messageId>')}`);
+    process.exit(1);
+  }
+
+  const result = await callTool(SERVER, 'email_delete', { messageId });
+
+  try {
+    const parsed = JSON.parse(result);
+    if (parsed.status === 'error') {
+      console.error(chalk.red('Error: ' + parsed.errorMessage));
+      process.exit(1);
+    }
+
+    console.log(chalk.green('Message deleted.'));
+  } catch {
+    console.log(result);
+  }
+}
+
+async function getAttachment(): Promise<void> {
+  const getArgValue = (flag: string): string | undefined => {
+    const index = process.argv.findIndex((arg) => arg === flag);
+    return index !== -1 ? process.argv[index + 1] : undefined;
+  };
+
+  const messageId = getArgValue('--message');
+  const indexStr = getArgValue('--index');
+
+  if (!messageId || indexStr === undefined) {
+    console.error(chalk.red('Error: --message and --index are required'));
+    console.log(`Usage: ${chalk.cyan('npx atxp email get-attachment --message <messageId> --index <n>')}`);
+    process.exit(1);
+  }
+
+  const attachmentIndex = parseInt(indexStr, 10);
+  if (isNaN(attachmentIndex) || attachmentIndex < 0) {
+    console.error(chalk.red('Error: --index must be a non-negative integer'));
+    process.exit(1);
+  }
+
+  const result = await callTool(SERVER, 'email_get_attachment', { messageId, attachmentIndex });
+
+  try {
+    const parsed = JSON.parse(result);
+    if (parsed.status === 'error') {
+      console.error(chalk.red('Error: ' + parsed.errorMessage));
+      process.exit(1);
+    }
+
+    console.log(chalk.bold('Filename: ') + parsed.filename);
+    console.log(chalk.bold('Type: ') + parsed.contentType);
+    console.log(chalk.bold('Size: ') + parsed.size + ' bytes');
+    console.log(chalk.bold('Content (base64): '));
+    console.log(parsed.content);
+  } catch {
     console.log(result);
   }
 }
