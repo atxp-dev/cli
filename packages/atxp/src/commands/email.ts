@@ -12,9 +12,11 @@ interface EmailOptions {
 function showEmailHelp(): void {
   console.log(chalk.bold('Email Commands:'));
   console.log();
-  console.log('  ' + chalk.cyan('npx atxp email inbox') + '                ' + 'Check your inbox');
-  console.log('  ' + chalk.cyan('npx atxp email read') + ' ' + chalk.yellow('<messageId>') + '    ' + 'Read a specific message');
-  console.log('  ' + chalk.cyan('npx atxp email send') + ' ' + chalk.yellow('<options>') + '      ' + 'Send an email');
+  console.log('  ' + chalk.cyan('npx atxp email inbox') + '                    ' + 'Check your inbox');
+  console.log('  ' + chalk.cyan('npx atxp email read') + ' ' + chalk.yellow('<messageId>') + '        ' + 'Read a specific message');
+  console.log('  ' + chalk.cyan('npx atxp email send') + ' ' + chalk.yellow('<options>') + '          ' + 'Send an email');
+  console.log('  ' + chalk.cyan('npx atxp email claim-username') + ' ' + chalk.yellow('<name>') + '  ' + 'Claim a username ($1.00)');
+  console.log('  ' + chalk.cyan('npx atxp email release-username') + '         ' + 'Release your username');
   console.log();
   console.log(chalk.bold('Send Options:'));
   console.log('  ' + chalk.yellow('--to') + ' ' + chalk.gray('<email>') + '      ' + 'Recipient email address (required)');
@@ -25,14 +27,19 @@ function showEmailHelp(): void {
   console.log('  npx atxp email inbox');
   console.log('  npx atxp email read msg_abc123');
   console.log('  npx atxp email send --to user@example.com --subject "Hello" --body "Hi there!"');
+  console.log('  npx atxp email claim-username myname');
+  console.log('  npx atxp email release-username');
   console.log();
   console.log(chalk.bold('Pricing:'));
-  console.log('  Inbox check: ' + chalk.green('FREE'));
-  console.log('  Read message: ' + chalk.green('FREE'));
-  console.log('  Send email:  ' + chalk.yellow('$0.01 per email'));
+  console.log('  Inbox check:     ' + chalk.green('FREE'));
+  console.log('  Read message:    ' + chalk.green('FREE'));
+  console.log('  Send email:      ' + chalk.yellow('$0.01 per email'));
+  console.log('  Claim username:  ' + chalk.yellow('$1.00'));
+  console.log('  Release username: ' + chalk.green('FREE'));
   console.log();
   console.log(chalk.bold('Your Email Address:'));
   console.log('  Each ATXP user gets a unique address: ' + chalk.cyan('{user_id}@atxp.email'));
+  console.log('  Claim a username to use ' + chalk.cyan('{username}@atxp.email') + ' instead.');
 }
 
 export async function emailCommand(subCommand: string, options: EmailOptions, messageId?: string): Promise<void> {
@@ -54,6 +61,14 @@ export async function emailCommand(subCommand: string, options: EmailOptions, me
       await sendEmail(options);
       break;
 
+    case 'claim-username':
+      await claimUsername(messageId);
+      break;
+
+    case 'release-username':
+      await releaseUsernameCmd();
+      break;
+
     default:
       console.error(chalk.red(`Unknown email command: ${subCommand}`));
       console.log();
@@ -73,6 +88,9 @@ async function checkInbox(): Promise<void> {
     }
 
     console.log(chalk.bold('Inbox: ') + chalk.cyan(parsed.inboxAddress || 'Unknown'));
+    if (parsed.aliases && parsed.aliases.length > 0) {
+      console.log(chalk.bold('Aliases: ') + parsed.aliases.map((a: string) => chalk.cyan(a)).join(', '));
+    }
     console.log();
 
     if (!parsed.messages || parsed.messages.length === 0) {
@@ -185,6 +203,47 @@ async function sendEmail(options: EmailOptions): Promise<void> {
     }
   } catch {
     // If not JSON, just print raw result
+    console.log(result);
+  }
+}
+
+async function claimUsername(username?: string): Promise<void> {
+  if (!username) {
+    console.error(chalk.red('Error: username is required'));
+    console.log(`Usage: ${chalk.cyan('npx atxp email claim-username <username>')}`);
+    console.log(chalk.gray('Username must be 3-32 chars, start with a letter, lowercase alphanumeric + hyphens + underscores.'));
+    process.exit(1);
+  }
+
+  const result = await callTool(SERVER, 'email_claim_username', { username });
+
+  try {
+    const parsed = JSON.parse(result);
+    if (parsed.status === 'error') {
+      console.error(chalk.red('Error: ' + parsed.errorMessage));
+      process.exit(1);
+    }
+
+    console.log(chalk.green('Username claimed successfully!'));
+    console.log(chalk.bold('Username: ') + chalk.cyan(parsed.username));
+    console.log(chalk.bold('Email address: ') + chalk.cyan(parsed.inboxAddress));
+  } catch {
+    console.log(result);
+  }
+}
+
+async function releaseUsernameCmd(): Promise<void> {
+  const result = await callTool(SERVER, 'email_release_username', {});
+
+  try {
+    const parsed = JSON.parse(result);
+    if (parsed.status === 'error') {
+      console.error(chalk.red('Error: ' + parsed.errorMessage));
+      process.exit(1);
+    }
+
+    console.log(chalk.green('Username released. Your email address has reverted to {user_id}@atxp.email.'));
+  } catch {
     console.log(result);
   }
 }

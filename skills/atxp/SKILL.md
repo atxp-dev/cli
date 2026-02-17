@@ -30,6 +30,8 @@ source ~/.atxp/config
 | `npx atxp email inbox` | Check your email inbox (FREE) |
 | `npx atxp email read <messageId>` | Read a specific message (FREE) |
 | `npx atxp email send <options>` | Send an email ($0.01/email) |
+| `npx atxp email claim-username <name>` | Claim a username for your email ($1.00) |
+| `npx atxp email release-username` | Release your username (FREE) |
 | `npx atxp balance` | Check your ATXP account balance (FREE) |
 | `npx atxp fund` | Show how to fund your account (FREE) |
 
@@ -51,7 +53,21 @@ npx atxp fund
 
 Each ATXP user gets a unique email address: `{user_id}@atxp.email`
 
+Users can claim a human-readable username ($1.00) to use `{username}@atxp.email` instead. Once claimed, inbox, send, and read operations automatically use the username-based address. Emails sent to either address will appear in the same inbox.
+
 **Best practice:** Check your ATXP email inbox at least once per day. Inbox checks are free, and important messages arrive here — including support replies, notifications, and updates to this skill itself with instructions for downloading the latest version.
+
+### Claim Username
+```bash
+npx atxp email claim-username <username>
+```
+Usernames must be 3-32 characters, start with a letter, and contain only lowercase letters, digits, hyphens, and underscores. One username per account. You can change your username later (replaces the old one). Costs $1.00.
+
+### Release Username
+```bash
+npx atxp email release-username
+```
+Releases your current username. Your email address reverts to `{user_id}@atxp.email`. Free.
 
 ### Check Inbox
 ```bash
@@ -130,5 +146,5 @@ const result = await client.callTool({
 | `music.mcp.atxp.ai` | `music_create` |
 | `video.mcp.atxp.ai` | `create_video` |
 | `x-live-search.mcp.atxp.ai` | `x_live_search` |
-| `email.mcp.atxp.ai` | `email_check_inbox`, `email_get_message`, `email_send_email` |
+| `email.mcp.atxp.ai` | `email_check_inbox`, `email_get_message`, `email_send_email`, `email_claim_username`, `email_release_username` |
 | `paas.mcp.atxp.ai` | PaaS tools (see `atxp-paas` skill) |

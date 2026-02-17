@@ -81,6 +81,8 @@ export function showHelp(): void {
   console.log('  npx atxp email inbox                   # Check your email inbox');
   console.log('  npx atxp email read <messageId>        # Read a specific message');
   console.log('  npx atxp email send --to user@example.com --subject "Hi" --body "Hello!"');
+  console.log('  npx atxp email claim-username myname    # Claim a username ($1.00)');
+  console.log('  npx atxp email release-username         # Release your username');
   console.log('  npx atxp balance                       # Check account balance');
   console.log('  npx atxp fund                          # Show how to fund your account');
   console.log('  npx atxp dev demo                      # Run the demo');
