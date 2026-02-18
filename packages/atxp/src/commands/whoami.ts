@@ -66,6 +66,8 @@ export async function whoamiCommand(): Promise<void> {
       displayName?: string;
       sources?: Array<{ chain: string; address: string }>;
       team?: { id: string; name: string; role: string };
+      ownerEmail?: string;
+      isOrphan?: boolean;
     };
 
     // Find the primary wallet address from sources
@@ -83,6 +85,12 @@ export async function whoamiCommand(): Promise<void> {
     console.log('  ' + chalk.bold('Connection Token:') + '  ' + token);
     if (wallet) {
       console.log('  ' + chalk.bold('Wallet:') + '            ' + wallet.address + chalk.gray(` (${wallet.chain})`));
+    }
+    if (data.ownerEmail) {
+      console.log('  ' + chalk.bold('Owner:') + '             ' + chalk.cyan(data.ownerEmail));
+    }
+    if (data.isOrphan) {
+      console.log('  ' + chalk.bold('Owner:') + '             ' + chalk.gray('self-registered (no owner)'));
     }
     if (data.team) {
       console.log('  ' + chalk.bold('Team:') + '              ' + data.team.name + chalk.gray(` (${data.team.role})`));
