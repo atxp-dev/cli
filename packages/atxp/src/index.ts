@@ -17,6 +17,7 @@ import { balanceCommand } from './commands/balance.js';
 import { depositCommand } from './commands/deposit.js';
 import { paasCommand } from './commands/paas/index.js';
 import { agentCommand } from './commands/agent.js';
+import { whoamiCommand } from './commands/whoami.js';
 
 interface DemoOptions {
   port: number;
@@ -316,6 +317,10 @@ async function main() {
     case 'fund':
     case 'deposit':
       await depositCommand();
+      break;
+
+    case 'whoami':
+      await whoamiCommand();
       break;
 
     case 'paas':

@@ -26,6 +26,7 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('email') + ' ' + chalk.yellow('<command>') + '   ' + 'Send and receive emails');
   console.log('  ' + chalk.cyan('balance') + '            ' + 'Check your ATXP account balance');
   console.log('  ' + chalk.cyan('fund') + '               ' + 'Show how to fund your account');
+  console.log('  ' + chalk.cyan('whoami') + '             ' + 'Show your account info (ID, email, wallet)');
   console.log('  ' + chalk.cyan('agent') + ' ' + chalk.yellow('<command>') + '   ' + 'Create and manage agent accounts');
   console.log();
 
@@ -88,6 +89,7 @@ export function showHelp(): void {
   console.log('  npx atxp email release-username         # Release your username');
   console.log('  npx atxp balance                       # Check account balance');
   console.log('  npx atxp fund                          # Show how to fund your account');
+  console.log('  npx atxp whoami                        # Show account info');
   console.log('  npx atxp dev demo                      # Run the demo');
   console.log('  npx atxp dev create my-app             # Create a new project');
   console.log();
