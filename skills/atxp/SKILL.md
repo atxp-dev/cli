@@ -1,6 +1,6 @@
 ---
 name: atxp
-description: Access ATXP paid API tools for web search, AI image generation, music creation, video generation, X/Twitter search, and email. Use when users need real-time web search, AI-generated media (images, music, video), X/Twitter search, or to send/receive emails. Requires authentication via `npx atxp login`.
+description: Access ATXP paid API tools for web search, AI image generation, music creation, video generation, X/Twitter search, email, and agent account management. Use when users need real-time web search, AI-generated media (images, music, video), X/Twitter search, send/receive emails, or create and fund agent accounts. Requires authentication via `npx atxp login`.
 ---
 
 # ATXP Tools
@@ -38,6 +38,12 @@ source ~/.atxp/config
 | `npx atxp email release-username` | Release your username (FREE) |
 | `npx atxp balance` | Check your ATXP account balance (FREE) |
 | `npx atxp fund` | Show how to fund your account (FREE) |
+| `npx atxp whoami` | Show account info (ID, type, email, wallet) (FREE) |
+| `npx atxp topup` | Create a Stripe payment link to fund your agent (FREE) |
+| `npx atxp topup --amount <n>` | Create a payment link with suggested amount (FREE) |
+| `npx atxp agent create` | Create a new agent account (requires human login) |
+| `npx atxp agent list` | List your agents (requires human login) |
+| `npx atxp agent register` | Self-register as an agent (no login required) |
 
 ## Balance
 
@@ -51,6 +57,50 @@ npx atxp balance
 Fund your ATXP account via USDC deposit addresses (one per chain, typically Base and Solana) or with credit card and other standard payment methods at https://accounts.atxp.ai/fund.
 ```bash
 npx atxp fund
+```
+
+## Account Info
+
+Check your account details including ID, type, email, wallet, and owner:
+```bash
+npx atxp whoami
+```
+
+## Agent Accounts
+
+Agents are autonomous accounts with their own wallet, email, and balance.
+
+### Create an Agent (Human Owner)
+Requires login as a human account. The agent is owned by the logged-in user.
+```bash
+npx atxp login
+npx atxp agent create
+```
+
+### Self-Register as an Agent
+No login required. Creates an orphan agent (no human owner).
+```bash
+npx atxp agent register
+```
+
+### List Your Agents
+```bash
+npx atxp agent list
+```
+
+### Agent Topup
+Agents can create Stripe Payment Links to request funding. The payer can adjust the amount at checkout ($1–$1,000).
+```bash
+npx atxp topup                    # Default $10 suggested amount
+npx atxp topup --amount 100       # $100 suggested amount
+npx atxp topup --amount 25 --open # Create link and open in browser
+```
+
+### Agent Login
+After creating or registering an agent, login as the agent using its connection string:
+```bash
+npx atxp login --token "<connection_string>"
+source ~/.atxp/config
 ```
 
 ## Email
