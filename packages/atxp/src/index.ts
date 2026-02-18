@@ -18,6 +18,7 @@ import { depositCommand } from './commands/deposit.js';
 import { paasCommand } from './commands/paas/index.js';
 import { agentCommand } from './commands/agent.js';
 import { whoamiCommand } from './commands/whoami.js';
+import { topupCommand } from './commands/topup.js';
 
 interface DemoOptions {
   port: number;
@@ -91,7 +92,7 @@ function parseArgs(): {
 
   // Check for help flags early - but NOT for paas or email commands (they handle --help internally)
   const helpFlag = process.argv.includes('--help') || process.argv.includes('-h');
-  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'agent') {
+  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'agent' && command !== 'topup') {
     return {
       command: 'help',
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
@@ -329,6 +330,10 @@ async function main() {
 
     case 'agent':
       await agentCommand(subCommand || '');
+      break;
+
+    case 'topup':
+      await topupCommand();
       break;
 
     case 'dev':
