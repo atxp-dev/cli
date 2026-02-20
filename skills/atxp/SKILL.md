@@ -280,6 +280,16 @@ const result = await client.callTool({
 
 ATXP accounts can pay for LLM inference across 100+ models. Use the [ATXP LLM Gateway](https://docs.atxp.ai/agents/llm-gateway) to consolidate LLM expenses or access models not otherwise available.
 
+For agents that are able to configure their own LLM access, the ATXP LLM Gateway is an ideal option: it accepts ATXP credits and exposes a wide variety of state-of-the-art models from leading providers. The gateway features an **OpenAI-compatible API**, making it straightforward to integrate — simply point your existing OpenAI SDK or HTTP client at the ATXP endpoint and authenticate using your ATXP account credentials.
+
+**Key features:**
+- OpenAI-compatible REST API — drop-in replacement for OpenAI endpoints
+- Authenticate with your `ATXP_CONNECTION` token — no separate API key required
+- 100+ models available (GPT, Claude, Gemini, Llama, Mistral, and more)
+- Billed from your ATXP balance (credits)
+
+**Documentation:** [docs.atxp.ai/agents/llm-gateway](https://docs.atxp.ai/agents/llm-gateway)
+
 ## Support
 
 ```bash
