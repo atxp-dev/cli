@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import fs from 'fs';
+import JSZip from 'jszip';
 import path from 'path';
 import { getConnection } from '../config.js';
 
@@ -37,6 +38,7 @@ function showBackupHelp(): void {
   console.log();
   console.log(chalk.bold('Details:'));
   console.log('  Backs up all .md files (recursively) from the given directory.');
+  console.log('  Files are compressed into a zip archive before upload.');
   console.log('  Each push replaces the previous server snapshot entirely.');
   console.log('  Pull writes server files to the local directory (non-destructive).');
   console.log();
@@ -104,15 +106,23 @@ async function pushBackup(pathArg: string): Promise<void> {
   }
 
   const totalBytes = files.reduce((sum, f) => sum + Buffer.byteLength(f.content, 'utf-8'), 0);
-  console.log(chalk.gray(`\nPushing ${files.length} file(s) (${formatBytes(totalBytes)})...`));
+  console.log(chalk.gray(`\nCompressing ${files.length} file(s) (${formatBytes(totalBytes)})...`));
+
+  const zip = new JSZip();
+  for (const file of files) {
+    zip.file(file.path, file.content);
+  }
+  const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 } });
+
+  console.log(chalk.gray(`Pushing zip archive (${formatBytes(zipBuffer.length)})...`));
 
   const res = await fetch(`${baseUrl}/backup/files`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/zip',
     },
-    body: JSON.stringify({ files: files.map(f => ({ path: f.path, content: f.content })) }),
+    body: new Uint8Array(zipBuffer),
   });
 
   if (!res.ok) {
@@ -144,6 +154,7 @@ async function pullBackup(pathArg: string): Promise<void> {
   const res = await fetch(`${baseUrl}/backup/files`, {
     headers: {
       'Authorization': `Bearer ${token}`,
+      'Accept': 'application/zip',
     },
   });
 
@@ -153,9 +164,20 @@ async function pullBackup(pathArg: string): Promise<void> {
     process.exit(1);
   }
 
-  const data = await res.json() as { files: BackupFile[] };
+  const zipBuffer = Buffer.from(await res.arrayBuffer());
 
-  if (!data.files || data.files.length === 0) {
+  if (zipBuffer.length === 0) {
+    console.log(chalk.yellow('No backup found on server. Push one first with:'));
+    console.log(chalk.cyan('  npx atxp backup push --path <dir>'));
+    return;
+  }
+
+  console.log(chalk.gray(`Extracting zip archive (${formatBytes(zipBuffer.length)})...`));
+
+  const zip = await JSZip.loadAsync(zipBuffer);
+  const fileNames = Object.keys(zip.files).filter(name => !zip.files[name].dir);
+
+  if (fileNames.length === 0) {
     console.log(chalk.yellow('No backup found on server. Push one first with:'));
     console.log(chalk.cyan('  npx atxp backup push --path <dir>'));
     return;
@@ -164,19 +186,20 @@ async function pullBackup(pathArg: string): Promise<void> {
   // Create target directory if needed
   fs.mkdirSync(resolvedPath, { recursive: true });
 
-  for (const file of data.files) {
-    const filePath = path.join(resolvedPath, file.path);
+  for (const name of fileNames) {
+    const content = await zip.files[name].async('string');
+    const filePath = path.join(resolvedPath, name);
     const fileDir = path.dirname(filePath);
 
     fs.mkdirSync(fileDir, { recursive: true });
-    fs.writeFileSync(filePath, file.content, 'utf-8');
+    fs.writeFileSync(filePath, content, 'utf-8');
 
-    console.log(chalk.gray(`  ${file.path}`));
+    console.log(chalk.gray(`  ${name}`));
   }
 
   console.log();
   console.log(chalk.green.bold('Backup pulled successfully!'));
-  console.log('  ' + chalk.bold('Files written:') + ' ' + data.files.length);
+  console.log('  ' + chalk.bold('Files written:') + ' ' + fileNames.length);
   console.log('  ' + chalk.bold('Directory:') + '     ' + resolvedPath);
 }
 

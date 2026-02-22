@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs';
+import JSZip from 'jszip';
 import os from 'os';
 import path from 'path';
 import { collectMdFiles } from './backup.js';
@@ -245,6 +246,70 @@ describe('Tool Commands', () => {
 
       expect(`${baseUrl}/backup/files`).toBe('https://accounts.atxp.ai/backup/files');
       expect(`${baseUrl}/backup/status`).toBe('https://accounts.atxp.ai/backup/status');
+    });
+
+    it('should create a zip archive from collected files', async () => {
+      fs.writeFileSync(path.join(tmpDir, 'SOUL.md'), '# Soul');
+      const subDir = path.join(tmpDir, 'memory');
+      fs.mkdirSync(subDir);
+      fs.writeFileSync(path.join(subDir, 'session.md'), '# Session notes');
+
+      const files = collectMdFiles(tmpDir);
+
+      const zip = new JSZip();
+      for (const file of files) {
+        zip.file(file.path, file.content);
+      }
+      const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 } });
+
+      expect(zipBuffer.length).toBeGreaterThan(0);
+      expect(zipBuffer.length).toBeLessThan(
+        files.reduce((sum, f) => sum + Buffer.byteLength(f.content, 'utf-8'), 0) + 1024
+      );
+    });
+
+    it('should round-trip files through zip compression', async () => {
+      fs.writeFileSync(path.join(tmpDir, 'README.md'), '# README\nSome content here.');
+      const subDir = path.join(tmpDir, 'memory');
+      fs.mkdirSync(subDir);
+      fs.writeFileSync(path.join(subDir, 'log.md'), '## Log\n- Entry 1\n- Entry 2');
+
+      const files = collectMdFiles(tmpDir);
+
+      // Create zip
+      const zip = new JSZip();
+      for (const file of files) {
+        zip.file(file.path, file.content);
+      }
+      const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 } });
+
+      // Extract zip
+      const extracted = await JSZip.loadAsync(zipBuffer);
+      const extractedNames = Object.keys(extracted.files).filter(n => !extracted.files[n].dir);
+
+      expect(extractedNames.sort()).toEqual(files.map(f => f.path).sort());
+
+      for (const file of files) {
+        const content = await extracted.files[file.path].async('string');
+        expect(content).toBe(file.content);
+      }
+    });
+
+    it('should produce a smaller zip than raw JSON payload', async () => {
+      // Create a file with repetitive content that compresses well
+      const repeatedContent = '# Memory\n\n' + 'This is a repeated line of memory content.\n'.repeat(100);
+      fs.writeFileSync(path.join(tmpDir, 'MEMORY.md'), repeatedContent);
+
+      const files = collectMdFiles(tmpDir);
+      const jsonSize = Buffer.byteLength(JSON.stringify({ files }), 'utf-8');
+
+      const zip = new JSZip();
+      for (const file of files) {
+        zip.file(file.path, file.content);
+      }
+      const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 } });
+
+      expect(zipBuffer.length).toBeLessThan(jsonSize);
     });
   });
 
