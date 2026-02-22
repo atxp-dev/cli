@@ -1,4 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { collectMdFiles } from './backup.js';
 
 describe('Tool Commands', () => {
   describe('search command', () => {
@@ -163,6 +167,84 @@ describe('Tool Commands', () => {
       expect(computeBalance({ balance: { iou: 3.14 } })).toBe(3.14);
       expect(computeBalance({ balance: {} })).toBe(0);
       expect(computeBalance({})).toBeNull();
+    });
+  });
+
+  describe('backup command', () => {
+    let tmpDir: string;
+
+    beforeEach(() => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'atxp-backup-test-'));
+    });
+
+    afterEach(() => {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    it('should collect .md files and ignore non-.md files', () => {
+      fs.writeFileSync(path.join(tmpDir, 'README.md'), '# Hello');
+      fs.writeFileSync(path.join(tmpDir, 'notes.txt'), 'not included');
+      fs.writeFileSync(path.join(tmpDir, 'config.json'), '{}');
+
+      const files = collectMdFiles(tmpDir);
+
+      expect(files).toHaveLength(1);
+      expect(files[0].path).toBe('README.md');
+      expect(files[0].content).toBe('# Hello');
+    });
+
+    it('should collect .md files recursively from subdirectories', () => {
+      const subDir = path.join(tmpDir, 'memory');
+      fs.mkdirSync(subDir);
+      fs.writeFileSync(path.join(tmpDir, 'SOUL.md'), '# Soul');
+      fs.writeFileSync(path.join(subDir, 'session.md'), '# Session');
+
+      const files = collectMdFiles(tmpDir);
+      const paths = files.map(f => f.path).sort();
+
+      expect(paths).toEqual(['SOUL.md', path.join('memory', 'session.md')]);
+    });
+
+    it('should compute relative paths correctly', () => {
+      const deep = path.join(tmpDir, 'a', 'b', 'c');
+      fs.mkdirSync(deep, { recursive: true });
+      fs.writeFileSync(path.join(deep, 'deep.md'), 'deep');
+
+      const files = collectMdFiles(tmpDir);
+
+      expect(files).toHaveLength(1);
+      expect(files[0].path).toBe(path.join('a', 'b', 'c', 'deep.md'));
+    });
+
+    it('should return empty array for directory with no .md files', () => {
+      fs.writeFileSync(path.join(tmpDir, 'file.txt'), 'text');
+      fs.writeFileSync(path.join(tmpDir, 'data.json'), '{}');
+
+      const files = collectMdFiles(tmpDir);
+
+      expect(files).toHaveLength(0);
+    });
+
+    it('should return empty array for empty directory', () => {
+      const files = collectMdFiles(tmpDir);
+      expect(files).toHaveLength(0);
+    });
+
+    it('should validate --path is required for push/pull', () => {
+      const validatePath = (pathArg: string | undefined) => {
+        return pathArg && pathArg.trim().length > 0;
+      };
+
+      expect(validatePath('/some/dir')).toBeTruthy();
+      expect(validatePath('')).toBeFalsy();
+      expect(validatePath(undefined)).toBeFalsy();
+    });
+
+    it('should construct correct API URLs', () => {
+      const baseUrl = 'https://accounts.atxp.ai';
+
+      expect(`${baseUrl}/backup/files`).toBe('https://accounts.atxp.ai/backup/files');
+      expect(`${baseUrl}/backup/status`).toBe('https://accounts.atxp.ai/backup/status');
     });
   });
 

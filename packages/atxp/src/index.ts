@@ -19,6 +19,7 @@ import { paasCommand } from './commands/paas/index.js';
 import { agentCommand } from './commands/agent.js';
 import { whoamiCommand } from './commands/whoami.js';
 import { topupCommand } from './commands/topup.js';
+import { backupCommand, type BackupOptions } from './commands/backup.js';
 
 interface DemoOptions {
   port: number;
@@ -86,13 +87,14 @@ function parseArgs(): {
   paasOptions: PaasOptions;
   paasArgs: string[];
   toolArgs: string;
+  backupOptions: BackupOptions;
 } {
   const command = process.argv[2];
   const subCommand = process.argv[3];
 
   // Check for help flags early - but NOT for paas or email commands (they handle --help internally)
   const helpFlag = process.argv.includes('--help') || process.argv.includes('-h');
-  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'agent' && command !== 'topup') {
+  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'agent' && command !== 'topup' && command !== 'backup') {
     return {
       command: 'help',
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
@@ -102,6 +104,7 @@ function parseArgs(): {
       paasOptions: {},
       paasArgs: [],
       toolArgs: '',
+      backupOptions: {},
     };
   }
 
@@ -221,6 +224,11 @@ function parseArgs(): {
     body: getArgValue('--body', ''),
   };
 
+  // Parse backup options
+  const backupOptions: BackupOptions = {
+    path: getArgValue('--path', ''),
+  };
+
   return {
     command,
     subCommand,
@@ -231,10 +239,11 @@ function parseArgs(): {
     paasOptions,
     paasArgs,
     toolArgs,
+    backupOptions,
   };
 }
 
-const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, paasOptions, paasArgs, toolArgs } = parseArgs();
+const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, paasOptions, paasArgs, toolArgs, backupOptions } = parseArgs();
 
 // Detect if we're in create mode (npm create atxp or npx atxp create)
 const isCreateMode =
@@ -334,6 +343,10 @@ async function main() {
 
     case 'topup':
       await topupCommand();
+      break;
+
+    case 'backup':
+      await backupCommand(subCommand || '', backupOptions);
       break;
 
     case 'dev':
