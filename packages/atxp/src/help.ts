@@ -31,6 +31,13 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('topup') + ' ' + chalk.yellow('[options]') + '  ' + 'Create a payment link to fund your agent');
   console.log();
 
+  console.log(chalk.bold('Backup:'));
+  console.log('  ' + chalk.cyan('backup push') + '         ' + 'Back up agent identity and memory files');
+  console.log('  ' + chalk.cyan('backup pull') + '         ' + 'Restore agent files from backup');
+  console.log('  ' + chalk.cyan('backup list') + '         ' + 'List available backup snapshots');
+  console.log('  ' + chalk.cyan('backup status') + '       ' + 'Show files that would be backed up');
+  console.log();
+
   console.log(chalk.bold('PAAS (Platform as a Service):'));
   console.log('  ' + chalk.cyan('paas worker') + '        ' + 'Deploy and manage serverless workers');
   console.log('  ' + chalk.cyan('paas db') + '            ' + 'Create and query databases (D1)');
@@ -102,6 +109,13 @@ export function showHelp(): void {
   console.log('  npx atxp topup                         # Create a $10 payment link');
   console.log('  npx atxp topup --amount 100            # Create a $100 payment link');
   console.log('  npx atxp topup --amount 25 --open      # Create link and open in browser');
+  console.log();
+
+  console.log(chalk.bold('Backup Examples:'));
+  console.log('  npx atxp backup status                 # See what files would be backed up');
+  console.log('  npx atxp backup push                   # Back up agent files');
+  console.log('  npx atxp backup pull                   # Restore latest backup');
+  console.log('  npx atxp backup pull --snapshot abc123  # Restore a specific snapshot');
   console.log();
 
   console.log(chalk.bold('PAAS Examples:'));

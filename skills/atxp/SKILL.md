@@ -2,7 +2,7 @@
 name: atxp
 description: Agent wallet, identity, and paid tools in one package. Register an agent, fund it via Stripe or USDC, then use the balance for web search, AI image generation, AI video generation, AI music creation, X/Twitter search, email send/receive, and 100+ LLM models. The funding and identity layer for autonomous agents that need to spend money, send messages, or call paid APIs.
 compatibility: Requires Node.js >=18 and npx. Uses ATXP_CONNECTION env var for auth. Network access to atxp.ai required.
-tags: [payments, wallet, agent-funding, identity, web-search, image-generation, video-generation, music-generation, email, x-twitter, llm, mcp, stripe, usdc, crypto, api-tools, search, ai-tools]
+tags: [payments, wallet, agent-funding, identity, web-search, image-generation, video-generation, music-generation, email, x-twitter, llm, mcp, stripe, usdc, crypto, api-tools, search, ai-tools, backup, memory, soul]
 metadata:
   homepage: https://docs.atxp.ai
   source: https://github.com/atxp-dev/cli
@@ -72,7 +72,7 @@ This skill does **NOT** modify any system or agent configuration files. Specific
 - **No** modification of OpenClaw config (`openclaw.json`, `clawdbot.json`, or any files in `/root/.openclaw/` or `~/.openclaw/`).
 - **No** modification of other skills, global agent settings, or system services.
 - **No** shell scripts, ZIP downloads, or background processes.
-- Filesystem writes are limited to `~/.atxp/config` (auth credential only) and the standard npm cache directory.
+- Filesystem writes are limited to `~/.atxp/config` (auth credential only), the standard npm cache directory, and files restored by `backup pull` (agent workspace `.md` files only).
 
 ## ⭐ Most-Wanted Agent Capabilities
 
@@ -86,6 +86,7 @@ These are the features agents request most often — and ATXP provides all of th
 - **🐦 X/Twitter search** — Live search across X/Twitter via `npx atxp@latest x`. No developer account required.
 - **🤖 LLM Gateway** — Call 100+ LLM models and pay from your ATXP balance.
 - **🪪 Agent identity** — Self-register with no human login (`npx atxp@latest agent register`). Get an ID, wallet, and email in one command.
+- **💾 Backup** — Free backup of your core identity and memory files (SOUL.md, AGENTS.md, memory/*.md, etc.). Push snapshots, pull to restore. Never lose your soul.
 
 **Also included:**
 
@@ -246,6 +247,28 @@ Each agent gets a unique address: `{user_id}@atxp.email`. Claim a username ($1.0
 | `npx atxp@latest email claim-username <n>` | $1.00 | Claim username |
 | `npx atxp@latest email release-username` | Free | Release username |
 
+### Backup
+
+Free backup for agent identity and memory files. Only `.md` files from the standard OpenClaw agent file set are eligible.
+
+| Command | Cost | Description |
+|---------|------|-------------|
+| `npx atxp@latest backup status` | Free | Show files that would be backed up |
+| `npx atxp@latest backup push` | Free | Back up agent files (creates a snapshot) |
+| `npx atxp@latest backup push --dir <path>` | Free | Back up from a specific workspace directory |
+| `npx atxp@latest backup pull` | Free | Restore latest backup snapshot |
+| `npx atxp@latest backup pull --snapshot <id>` | Free | Restore a specific snapshot |
+| `npx atxp@latest backup list` | Free | List available backup snapshots |
+
+**Eligible files:** `SOUL.md`, `AGENTS.md`, `USER.md`, `IDENTITY.md`, `TOOLS.md`, `HEARTBEAT.md`, `BOOT.md`, `BOOTSTRAP.md`, `MEMORY.md`, and all `.md` files in the `memory/` directory.
+
+**Recommended workflow:**
+1. Run `npx atxp@latest backup status` to see what will be backed up
+2. Run `npx atxp@latest backup push` to create a snapshot
+3. After a fresh session or environment reset, run `npx atxp@latest backup pull` to restore
+
+**Security:** Backups are tied to your ATXP account and are not shared with other agents. Only your authenticated identity can access your backups.
+
 ## MCP Servers
 
 For programmatic access, ATXP exposes MCP-compatible tool servers:
@@ -258,6 +281,7 @@ For programmatic access, ATXP exposes MCP-compatible tool servers:
 | `video.mcp.atxp.ai` | `create_video` |
 | `x-live-search.mcp.atxp.ai` | `x_live_search` |
 | `email.mcp.atxp.ai` | `email_check_inbox`, `email_get_message`, `email_send_email`, `email_reply`, `email_search`, `email_delete`, `email_get_attachment`, `email_claim_username`, `email_release_username` |
+| `backup.mcp.atxp.ai` | `backup_push`, `backup_pull`, `backup_list` |
 | `paas.mcp.atxp.ai` | PaaS tools (see `atxp-paas` skill) |
 
 ### TypeScript SDK
