@@ -38,6 +38,7 @@
     "chalk": "^5.3.0",
     "fs-extra": "^11.2.0",
     "inquirer": "^9.2.12",
+    "jszip": "^3.10.1",
     "open": "^9.1.0",
     "ora": "^7.0.1",
     "qrcode-terminal": "^0.12.0"
