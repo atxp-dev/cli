@@ -1,8 +1,13 @@
 ---
 name: atxp
 description: Agent wallet, identity, and paid tools in one package. Register an agent, fund it via Stripe or USDC, then use the balance for web search, AI image generation, AI video generation, AI music creation, X/Twitter search, email send/receive, and 100+ LLM models. The funding and identity layer for autonomous agents that need to spend money, send messages, or call paid APIs.
-compatibility: Requires Node.js >=18 and npx. Uses ATXP_CONNECTION env var for auth. Network access to atxp.ai required.
+compatibility: Requires Node.js >=18 and npx. Requires ATXP_CONNECTION env var (sensitive auth token). Network access to *.atxp.ai (HTTPS only). Writes to ~/.atxp/config. Runtime code download via npx from npm registry.
 tags: [payments, wallet, agent-funding, identity, web-search, image-generation, video-generation, music-generation, email, x-twitter, llm, mcp, stripe, usdc, crypto, api-tools, search, ai-tools]
+permissions:
+  - network: "*.atxp.ai (HTTPS only)"
+  - filesystem: "~/.atxp/config (read/write, auth credential)"
+  - subprocess: "npx atxp@latest (downloads and runs npm package)"
+  - credentials: "ATXP_CONNECTION (sensitive, grants wallet and identity access)"
 metadata:
   homepage: https://docs.atxp.ai
   source: https://github.com/atxp-dev/cli
@@ -82,6 +87,23 @@ This skill provides access to a funded wallet. To prevent unauthorized spending:
 - **Verify before spending:** before executing a paid command, confirm it aligns with the agent's current task. If uncertain, check `npx atxp@latest balance` first.
 - Paid commands are marked with "Paid" in the Commands Reference table below. Free commands (balance, whoami, inbox, etc.) carry no spending risk.
 
+**Human-approval recommendations for autonomous agents:**
+
+- Require explicit human approval before the first paid API call in a session.
+- Use a test wallet with minimal funds (e.g., 1–2 IOU credits) during development and evaluation.
+- Implement per-session spending caps in your agent framework — this skill does not enforce limits itself.
+- Treat `email send` and `email reply` as high-risk actions requiring human confirmation, since they can transmit data to arbitrary external addresses.
+
+### Runtime Execution Model
+
+This skill executes code downloaded from the npm registry at runtime via `npx`. This is an inherent property of the `npx` tool — it fetches the `atxp` package on first invocation and caches it locally.
+
+- **What is downloaded:** the [`atxp`](https://www.npmjs.com/package/atxp) npm package and its dependencies.
+- **Where it runs:** locally on the agent's machine as a Node.js subprocess. No remote code execution beyond HTTPS API calls to `*.atxp.ai`.
+- **Version pinning:** use `npx atxp@<exact-version>` (e.g., `npx atxp@1.10.9`) instead of `@latest` to prevent unexpected updates. Verify package integrity with `npm audit signatures`.
+- **Source verification:** the package source is at [github.com/atxp-dev/cli](https://github.com/atxp-dev/cli). Compare the published npm package against the repository before trusting it.
+- **Cache location:** npm stores the package in its standard cache directory (typically `~/.npm/_npx/`). No other directories are written to except `~/.atxp/config`.
+
 ### System Integrity
 
 This skill does **NOT** modify any system or agent configuration files. Specifically:
@@ -97,7 +119,7 @@ These are the features agents request most often — and ATXP provides all of th
 
 - **🔍 Web search** — Real-time web search with no API key juggling. Just `npx atxp@latest search <query>`. The single most common capability agents lack.
 - **📧 Email (send & receive)** — Every agent gets its own inbox (`@atxp.email`). Send, receive, reply, search, download attachments. No OAuth, no Gmail setup, no human forwarding.
-- **💰 Own wallet & money** — Register, get 10 free IOU credits, fund via Stripe or USDC. The agent controls its own balance. No human approval per transaction.
+- **💰 Own wallet & money** — Register, get 10 free IOU credits, fund via Stripe or USDC. The agent controls its own balance. See Financial Safety above for recommended approval gates.
 - **🖼️ AI image generation** — Generate images from a prompt via `npx atxp@latest image`. Pay-per-use from agent balance.
 - **🎵 AI music & 🎬 video generation** — Create music (`npx atxp@latest music`) and video (`npx atxp@latest video`) directly.
 - **🐦 X/Twitter search** — Live search across X/Twitter via `npx atxp@latest x`. No developer account required.
