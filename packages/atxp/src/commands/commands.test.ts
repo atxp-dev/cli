@@ -3,7 +3,7 @@ import fs from 'fs';
 import JSZip from 'jszip';
 import os from 'os';
 import path from 'path';
-import { collectMdFiles } from './backup.js';
+import { collectMdFiles, chunkMarkdown, textToVector } from './memory.js';
 
 describe('Tool Commands', () => {
   describe('search command', () => {
@@ -171,11 +171,11 @@ describe('Tool Commands', () => {
     });
   });
 
-  describe('backup command', () => {
+  describe('memory command', () => {
     let tmpDir: string;
 
     beforeEach(() => {
-      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'atxp-backup-test-'));
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'atxp-memory-test-'));
     });
 
     afterEach(() => {
@@ -310,6 +310,92 @@ describe('Tool Commands', () => {
       const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 } });
 
       expect(zipBuffer.length).toBeLessThan(jsonSize);
+    });
+  });
+
+  describe('chunkMarkdown', () => {
+    it('should split markdown by headings', () => {
+      const content = '# Title\nSome intro text.\n\n## Section A\nContent A.\n\n## Section B\nContent B.';
+      const chunks = chunkMarkdown('test.md', content);
+
+      expect(chunks).toHaveLength(3);
+      expect(chunks[0].heading).toBe('Title');
+      expect(chunks[0].text).toContain('Some intro text.');
+      expect(chunks[1].heading).toBe('Section A');
+      expect(chunks[1].text).toContain('Content A.');
+      expect(chunks[2].heading).toBe('Section B');
+      expect(chunks[2].text).toContain('Content B.');
+    });
+
+    it('should use file path as heading for content without headings', () => {
+      const content = 'Just some plain text\nwith multiple lines.';
+      const chunks = chunkMarkdown('notes.md', content);
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].heading).toBe('notes.md');
+      expect(chunks[0].filePath).toBe('notes.md');
+      expect(chunks[0].text).toBe('Just some plain text\nwith multiple lines.');
+    });
+
+    it('should return empty array for empty content', () => {
+      const chunks = chunkMarkdown('empty.md', '');
+      expect(chunks).toHaveLength(0);
+    });
+
+    it('should handle h1, h2, and h3 headings', () => {
+      const content = '# H1\nOne\n## H2\nTwo\n### H3\nThree';
+      const chunks = chunkMarkdown('test.md', content);
+
+      expect(chunks).toHaveLength(3);
+      expect(chunks[0].heading).toBe('H1');
+      expect(chunks[1].heading).toBe('H2');
+      expect(chunks[2].heading).toBe('H3');
+    });
+
+    it('should track start line numbers', () => {
+      const content = '# Title\nLine 2\n\n## Section\nLine 5';
+      const chunks = chunkMarkdown('test.md', content);
+
+      expect(chunks[0].startLine).toBe(1);
+      expect(chunks[1].startLine).toBe(4);
+    });
+  });
+
+  describe('textToVector', () => {
+    it('should return a vector of length 256', () => {
+      const vec = textToVector('hello world');
+      expect(vec).toHaveLength(256);
+    });
+
+    it('should return a normalized vector', () => {
+      const vec = textToVector('the quick brown fox jumps over the lazy dog');
+      const norm = Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0));
+      expect(norm).toBeCloseTo(1.0, 4);
+    });
+
+    it('should return zero vector for empty input', () => {
+      const vec = textToVector('');
+      const allZero = vec.every((v) => v === 0);
+      expect(allZero).toBe(true);
+    });
+
+    it('should produce similar vectors for similar text', () => {
+      const vec1 = textToVector('authentication login flow');
+      const vec2 = textToVector('authentication login process');
+      const vec3 = textToVector('ocean waves sunset beach');
+
+      // Cosine similarity (vectors are already normalized)
+      const sim12 = vec1.reduce((sum, v, i) => sum + v * vec2[i], 0);
+      const sim13 = vec1.reduce((sum, v, i) => sum + v * vec3[i], 0);
+
+      // Similar texts should have higher similarity than dissimilar ones
+      expect(sim12).toBeGreaterThan(sim13);
+    });
+
+    it('should be deterministic', () => {
+      const vec1 = textToVector('test input');
+      const vec2 = textToVector('test input');
+      expect(vec1).toEqual(vec2);
     });
   });
 

@@ -331,12 +331,12 @@ For agents that are able to configure their own LLM access, the ATXP LLM Gateway
 
 ## Related Skills
 
-### ATXP Backup
+### ATXP Memory
 
-The **atxp-backup** skill provides free cloud backup for agent identity and memory files (`.md` only). It is packaged as a separate skill because it has a **different security boundary**: it reads and writes files in a user-specified directory (`--path`), whereas this skill only touches `~/.atxp/config`. If your agent needs to persist SOUL.md, MEMORY.md, or other workspace files across environments, install it separately:
+The **atxp-memory** skill provides agent memory management — cloud backup/restore and local vector search of `.md` memory files. It is packaged as a separate skill because it has a **different security boundary**: it reads and writes files in a user-specified directory (`--path`), whereas this skill only touches `~/.atxp/config`. If your agent needs to persist, search, or recover SOUL.md, MEMORY.md, or other workspace files, install it separately:
 
 ```bash
-npx skills add atxp-dev/cli --skill atxp-backup
+npx skills add atxp-dev/cli --skill atxp-memory
 ```
 
 ## Support
