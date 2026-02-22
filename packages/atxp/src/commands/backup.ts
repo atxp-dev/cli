@@ -28,6 +28,41 @@ function getAccountsAuth(): { baseUrl: string; token: string } {
   return { baseUrl: `${url.protocol}//${url.host}`, token };
 }
 
+async function handleApiError(res: Response, operation: string): Promise<never> {
+  // Read response body as text first to avoid losing non-JSON error details
+  const rawBody = await res.text().catch(() => '');
+  let errorMessage: string | undefined;
+
+  if (rawBody) {
+    try {
+      const json = JSON.parse(rawBody) as Record<string, string>;
+      errorMessage = json.error;
+    } catch {
+      // Response was not JSON (e.g. HTML from a proxy or CDN)
+    }
+  }
+
+  if (res.status === 403) {
+    console.error(chalk.red(`Error: Forbidden (HTTP 403) during backup ${operation}`));
+    console.error(chalk.gray('Possible causes:'));
+    console.error(chalk.gray('  - Your connection token may have expired. Try: npx atxp login'));
+    console.error(chalk.gray('  - Your account may not have backup access.'));
+    if (errorMessage) {
+      console.error(chalk.gray(`  Server message: ${errorMessage}`));
+    } else if (rawBody && rawBody.length > 0 && rawBody.length <= 500) {
+      console.error(chalk.gray(`  Server response: ${rawBody}`));
+    }
+  } else if (res.status === 401) {
+    console.error(chalk.red(`Error: Unauthorized (HTTP 401) during backup ${operation}`));
+    console.error(chalk.gray('Your connection token is invalid or expired. Try: npx atxp login'));
+  } else {
+    const detail = errorMessage || res.statusText;
+    console.error(chalk.red(`Error: ${detail} (HTTP ${res.status}) during backup ${operation}`));
+  }
+
+  process.exit(1);
+}
+
 function showBackupHelp(): void {
   console.log(chalk.bold('Backup Commands:'));
   console.log();
@@ -116,9 +151,7 @@ async function pushBackup(pathArg: string): Promise<void> {
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    console.error(chalk.red(`Error: ${(body as Record<string, string>).error || res.statusText}`));
-    process.exit(1);
+    await handleApiError(res, 'push');
   }
 
   const data = await res.json() as { fileCount: number; syncedAt: string };
@@ -148,9 +181,7 @@ async function pullBackup(pathArg: string): Promise<void> {
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    console.error(chalk.red(`Error: ${(body as Record<string, string>).error || res.statusText}`));
-    process.exit(1);
+    await handleApiError(res, 'pull');
   }
 
   const data = await res.json() as { files: BackupFile[] };
@@ -190,9 +221,7 @@ async function backupStatus(): Promise<void> {
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    console.error(chalk.red(`Error: ${(body as Record<string, string>).error || res.statusText}`));
-    process.exit(1);
+    await handleApiError(res, 'status');
   }
 
   const data = await res.json() as { fileCount: number; syncedAt: string; totalBytes: number };
