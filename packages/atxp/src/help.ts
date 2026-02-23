@@ -24,6 +24,7 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('video') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate a video');
   console.log('  ' + chalk.cyan('x') + ' ' + chalk.yellow('<query>') + '        ' + 'Search X/Twitter');
   console.log('  ' + chalk.cyan('email') + ' ' + chalk.yellow('<command>') + '   ' + 'Send and receive emails');
+  console.log('  ' + chalk.cyan('phone') + ' ' + chalk.yellow('<command>') + '   ' + 'SMS and voice calls');
   console.log('  ' + chalk.cyan('balance') + '            ' + 'Check your ATXP account balance');
   console.log('  ' + chalk.cyan('fund') + ' ' + chalk.yellow('[options]') + '     ' + 'Show funding options (crypto + payment links)');
   console.log('  ' + chalk.cyan('whoami') + '             ' + 'Show your account info (ID, email, wallet)');
@@ -89,6 +90,13 @@ export function showHelp(): void {
   console.log('  npx atxp email delete msg123            # Delete a message');
   console.log('  npx atxp email claim-username myname    # Claim a username ($1.00)');
   console.log('  npx atxp email release-username         # Release your username');
+  console.log('  npx atxp phone register                 # Register a phone number ($2.00)');
+  console.log('  npx atxp phone sms                      # Check SMS inbox');
+  console.log('  npx atxp phone send-sms --to "+14155551234" --body "Hello!"');
+  console.log('  npx atxp phone call --to "+14155551234" --instruction "Ask about hours"');
+  console.log('  npx atxp phone calls                    # Check call history');
+  console.log('  npx atxp phone read-call <callId>       # Read call transcript');
+  console.log('  npx atxp phone search "appointment"     # Search SMS and calls');
   console.log('  npx atxp balance                       # Check account balance');
   console.log('  npx atxp fund                          # Show all funding options');
   console.log('  npx atxp whoami                        # Show account info');

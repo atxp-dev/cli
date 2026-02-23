@@ -13,6 +13,7 @@ import { musicCommand } from './commands/music.js';
 import { videoCommand } from './commands/video.js';
 import { xCommand } from './commands/x.js';
 import { emailCommand } from './commands/email.js';
+import { phoneCommand, type PhoneOptions } from './commands/phone.js';
 import { balanceCommand } from './commands/balance.js';
 import { depositCommand } from './commands/deposit.js';
 import { paasCommand } from './commands/paas/index.js';
@@ -45,6 +46,18 @@ interface EmailOptions {
   to?: string;
   subject?: string;
   body?: string;
+}
+
+interface PhoneOptionsLocal {
+  to?: string;
+  body?: string;
+  mediaUrls?: string[];
+  instruction?: string;
+  areaCode?: string;
+  agentName?: string;
+  knowledgeBase?: string[];
+  voiceDescription?: string;
+  knowledgeBaseContent?: string;
 }
 
 interface PaasOptions {
@@ -85,6 +98,7 @@ function parseArgs(): {
   createOptions: CreateOptions;
   loginOptions: LoginOptions;
   emailOptions: EmailOptions;
+  phoneOptions: PhoneOptionsLocal;
   paasOptions: PaasOptions;
   paasArgs: string[];
   toolArgs: string;
@@ -95,13 +109,14 @@ function parseArgs(): {
 
   // Check for help flags early - but NOT for paas or email commands (they handle --help internally)
   const helpFlag = process.argv.includes('--help') || process.argv.includes('-h');
-  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'agent' && command !== 'fund' && command !== 'deposit' && command !== 'memory' && command !== 'backup') {
+  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'phone' && command !== 'agent' && command !== 'fund' && command !== 'deposit' && command !== 'memory' && command !== 'backup') {
     return {
       command: 'help',
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
       createOptions: { framework: undefined, appName: undefined, git: undefined },
       loginOptions: { force: false },
       emailOptions: {},
+      phoneOptions: {},
       paasOptions: {},
       paasArgs: [],
       toolArgs: '',
@@ -225,6 +240,19 @@ function parseArgs(): {
     body: getArgValue('--body', ''),
   };
 
+  // Parse phone options
+  const phoneOptions: PhoneOptionsLocal = {
+    to: getArgValue('--to', ''),
+    body: getArgValue('--body', ''),
+    mediaUrls: getAllArgValues('--media'),
+    instruction: getArgValue('--instruction', ''),
+    areaCode: getArgValue('--area-code', ''),
+    agentName: getArgValue('--agent-name', ''),
+    knowledgeBase: getAllArgValues('--knowledge-base'),
+    voiceDescription: getArgValue('--voice-description', ''),
+    knowledgeBaseContent: getArgValue('--knowledge-content', ''),
+  };
+
   // Parse memory options
   const memoryOptions: MemoryOptions = {
     path: getArgValue('--path', ''),
@@ -238,6 +266,7 @@ function parseArgs(): {
     createOptions: { framework, appName, git },
     loginOptions: { force, token, qr },
     emailOptions,
+    phoneOptions,
     paasOptions,
     paasArgs,
     toolArgs,
@@ -245,7 +274,7 @@ function parseArgs(): {
   };
 }
 
-const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, paasOptions, paasArgs, toolArgs, memoryOptions } = parseArgs();
+const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, memoryOptions } = parseArgs();
 
 // Extract positional args from argv, skipping flag values (e.g., --path <val> --topk <val>)
 function extractPositionalArgs(startIndex: number): string {
@@ -334,6 +363,11 @@ async function main() {
     case 'email':
       // For 'email read <messageId>', the messageId is in argv[4]
       await emailCommand(subCommand || '', emailOptions, process.argv[4]);
+      break;
+
+    case 'phone':
+      // For 'phone read-sms <id>' or 'phone read-call <id>', the positional arg is in argv[4]
+      await phoneCommand(subCommand || '', phoneOptions, process.argv[4]);
       break;
 
     case 'balance':
