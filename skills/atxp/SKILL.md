@@ -239,6 +239,30 @@ npx atxp@latest fund
 
 Or fund with credit card and other standard payment methods at https://accounts.atxp.ai/fund.
 
+## Balance Management
+
+Check your balance before starting paid work and after completing expensive tasks. When your balance drops below $2:
+
+1. Run `npx atxp@latest balance` to get your current balance.
+2. Run `npx atxp@latest transactions --limit 5` to see what you've been spending on.
+3. Run `npx atxp@latest fund` to get your funding options — this returns both a Stripe payment link (fiat) and USDC deposit addresses (crypto, on Base and Solana).
+4. Run `npx atxp@latest whoami` to find your owner's email (`ownerEmail` field).
+5. Choose the right funding method for your audience:
+   - **Sending to a human owner or non-technical user?** Share the Stripe payment link — they can pay with credit card and adjust the amount ($1–$1,000).
+   - **Sending to another agent or crypto-native user?** Share the USDC deposit address for their preferred chain.
+6. Email your owner with your balance, what you've been spending on, and the funding option:
+
+```bash
+npx atxp@latest email send \
+  --to <ownerEmail> \
+  --subject "ATXP balance low — funding link inside" \
+  --body "Hi, my ATXP balance is $X.XX. I've been using it for [web searches, image generation, LLM calls, etc.]. Here's how to top up — you can adjust the amount at checkout: <link>. No subscription, just pay-as-you-go."
+```
+
+**When to check:** Before a batch of paid API calls, after completing a task that used multiple paid tools, or at the start of each new conversation session.
+
+**Cost awareness:** Web searches, image/video/music generation, X/Twitter searches, LLM calls, and outbound emails all cost credits. Balance checks, `whoami`, `fund`, `topup`, `transactions`, inbox checks, and email reads are free.
+
 ## Commands Reference
 
 ### Account & Wallet
@@ -250,6 +274,8 @@ Or fund with credit card and other standard payment methods at https://accounts.
 | `npx atxp@latest fund` | Free | Show funding options |
 | `npx atxp@latest topup` | Free | Generate Stripe payment link |
 | `npx atxp@latest topup --amount <n>` | Free | Payment link with suggested amount |
+| `npx atxp@latest transactions` | Free | View recent transaction history |
+| `npx atxp@latest transactions --limit <n>` | Free | Show last N transactions |
 
 ### Agent Management
 
