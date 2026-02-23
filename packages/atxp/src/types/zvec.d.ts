@@ -41,7 +41,7 @@ declare module '@zvec/zvec' {
     readonly name: string;
     readonly dataType: number;
     readonly dimension?: number;
-    readonly indexParams?: { type: number; [key: string]: unknown };
+    readonly indexParams?: { indexType: number; [key: string]: unknown };
   }
 
   export class ZVecCollectionSchema {

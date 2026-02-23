@@ -247,6 +247,20 @@ function parseArgs(): {
 
 const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, paasOptions, paasArgs, toolArgs, memoryOptions } = parseArgs();
 
+// Extract positional args from argv, skipping flag values (e.g., --path <val> --topk <val>)
+function extractPositionalArgs(startIndex: number): string {
+  const args = process.argv.slice(startIndex);
+  const positional: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('-')) {
+      i++; // skip the flag's value
+    } else {
+      positional.push(args[i]);
+    }
+  }
+  return positional.join(' ');
+}
+
 // Detect if we're in create mode (npm create atxp or npx atxp create)
 const isCreateMode =
   process.env.npm_config_argv?.includes('create') ||
@@ -344,12 +358,12 @@ async function main() {
       break;
 
     case 'memory':
-      await memoryCommand(subCommand || '', memoryOptions, process.argv.slice(4).filter((arg) => !arg.startsWith('-')).join(' '));
+      await memoryCommand(subCommand || '', memoryOptions, extractPositionalArgs(4));
       break;
 
     case 'backup':
       // Backward compatibility: 'backup' is an alias for 'memory'
-      await memoryCommand(subCommand || '', memoryOptions, process.argv.slice(4).filter((arg) => !arg.startsWith('-')).join(' '));
+      await memoryCommand(subCommand || '', memoryOptions, extractPositionalArgs(4));
       break;
 
     case 'transactions':

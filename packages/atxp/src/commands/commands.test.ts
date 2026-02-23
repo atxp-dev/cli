@@ -3,7 +3,7 @@ import fs from 'fs';
 import JSZip from 'jszip';
 import os from 'os';
 import path from 'path';
-import { collectMdFiles, chunkMarkdown, textToVector } from './memory.js';
+import { collectFiles, chunkMarkdown, textToVector } from './memory.js';
 
 describe('Tool Commands', () => {
   describe('search command', () => {
@@ -182,25 +182,25 @@ describe('Tool Commands', () => {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     });
 
-    it('should collect .md files and ignore non-.md files', () => {
+    it('should collect all text files including non-.md files', () => {
       fs.writeFileSync(path.join(tmpDir, 'README.md'), '# Hello');
-      fs.writeFileSync(path.join(tmpDir, 'notes.txt'), 'not included');
+      fs.writeFileSync(path.join(tmpDir, 'notes.txt'), 'included too');
       fs.writeFileSync(path.join(tmpDir, 'config.json'), '{}');
 
-      const files = collectMdFiles(tmpDir);
+      const files = collectFiles(tmpDir);
+      const paths = files.map(f => f.path).sort();
 
-      expect(files).toHaveLength(1);
-      expect(files[0].path).toBe('README.md');
-      expect(files[0].content).toBe('# Hello');
+      expect(files).toHaveLength(3);
+      expect(paths).toEqual(['README.md', 'config.json', 'notes.txt']);
     });
 
-    it('should collect .md files recursively from subdirectories', () => {
+    it('should collect files recursively from subdirectories', () => {
       const subDir = path.join(tmpDir, 'memory');
       fs.mkdirSync(subDir);
       fs.writeFileSync(path.join(tmpDir, 'SOUL.md'), '# Soul');
       fs.writeFileSync(path.join(subDir, 'session.md'), '# Session');
 
-      const files = collectMdFiles(tmpDir);
+      const files = collectFiles(tmpDir);
       const paths = files.map(f => f.path).sort();
 
       expect(paths).toEqual(['SOUL.md', path.join('memory', 'session.md')]);
@@ -211,24 +211,52 @@ describe('Tool Commands', () => {
       fs.mkdirSync(deep, { recursive: true });
       fs.writeFileSync(path.join(deep, 'deep.md'), 'deep');
 
-      const files = collectMdFiles(tmpDir);
+      const files = collectFiles(tmpDir);
 
       expect(files).toHaveLength(1);
       expect(files[0].path).toBe(path.join('a', 'b', 'c', 'deep.md'));
     });
 
-    it('should return empty array for directory with no .md files', () => {
-      fs.writeFileSync(path.join(tmpDir, 'file.txt'), 'text');
-      fs.writeFileSync(path.join(tmpDir, 'data.json'), '{}');
-
-      const files = collectMdFiles(tmpDir);
-
+    it('should return empty array for empty directory', () => {
+      const files = collectFiles(tmpDir);
       expect(files).toHaveLength(0);
     });
 
-    it('should return empty array for empty directory', () => {
-      const files = collectMdFiles(tmpDir);
-      expect(files).toHaveLength(0);
+    it('should skip node_modules and .git directories', () => {
+      fs.writeFileSync(path.join(tmpDir, 'index.ts'), 'console.log("hi")');
+      fs.mkdirSync(path.join(tmpDir, 'node_modules', 'pkg'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, 'node_modules', 'pkg', 'index.js'), 'module.exports = {}');
+      fs.mkdirSync(path.join(tmpDir, '.git', 'objects'), { recursive: true });
+      fs.writeFileSync(path.join(tmpDir, '.git', 'HEAD'), 'ref: refs/heads/main');
+
+      const files = collectFiles(tmpDir);
+
+      expect(files).toHaveLength(1);
+      expect(files[0].path).toBe('index.ts');
+    });
+
+    it('should respect .gitignore rules', () => {
+      fs.writeFileSync(path.join(tmpDir, '.gitignore'), 'secret.env\nlogs/\n');
+      fs.writeFileSync(path.join(tmpDir, 'app.ts'), 'const x = 1');
+      fs.writeFileSync(path.join(tmpDir, 'secret.env'), 'API_KEY=abc');
+      fs.mkdirSync(path.join(tmpDir, 'logs'));
+      fs.writeFileSync(path.join(tmpDir, 'logs', 'app.log'), 'log entry');
+
+      const files = collectFiles(tmpDir);
+      const paths = files.map(f => f.path).sort();
+
+      expect(paths).toEqual(['.gitignore', 'app.ts']);
+    });
+
+    it('should skip binary files', () => {
+      fs.writeFileSync(path.join(tmpDir, 'readme.md'), '# Hello');
+      // Write a file with null bytes (binary)
+      fs.writeFileSync(path.join(tmpDir, 'image.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x00]));
+
+      const files = collectFiles(tmpDir);
+
+      expect(files).toHaveLength(1);
+      expect(files[0].path).toBe('readme.md');
     });
 
     it('should validate --path is required for push/pull', () => {
@@ -254,7 +282,7 @@ describe('Tool Commands', () => {
       fs.mkdirSync(subDir);
       fs.writeFileSync(path.join(subDir, 'session.md'), '# Session notes');
 
-      const files = collectMdFiles(tmpDir);
+      const files = collectFiles(tmpDir);
 
       const zip = new JSZip();
       for (const file of files) {
@@ -274,7 +302,7 @@ describe('Tool Commands', () => {
       fs.mkdirSync(subDir);
       fs.writeFileSync(path.join(subDir, 'log.md'), '## Log\n- Entry 1\n- Entry 2');
 
-      const files = collectMdFiles(tmpDir);
+      const files = collectFiles(tmpDir);
 
       // Create zip
       const zip = new JSZip();
@@ -300,7 +328,7 @@ describe('Tool Commands', () => {
       const repeatedContent = '# Memory\n\n' + 'This is a repeated line of memory content.\n'.repeat(100);
       fs.writeFileSync(path.join(tmpDir, 'MEMORY.md'), repeatedContent);
 
-      const files = collectMdFiles(tmpDir);
+      const files = collectFiles(tmpDir);
       const jsonSize = Buffer.byteLength(JSON.stringify({ files }), 'utf-8');
 
       const zip = new JSZip();

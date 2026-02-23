@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import fs from 'fs';
+import ignore, { type Ignore } from 'ignore';
 import JSZip from 'jszip';
 import path from 'path';
 import { getConnection } from '../config.js';
@@ -34,25 +35,125 @@ function getAccountsAuth(): { baseUrl: string; token: string } {
 
 // --- File collection ---
 
-export function collectMdFiles(dir: string): MemoryFile[] {
-  const entries = fs.readdirSync(dir, { recursive: true, withFileTypes: true });
+const ALWAYS_SKIP_DIRS = new Set([
+  'node_modules',
+  '.git',
+  '.hg',
+  '.svn',
+  '.atxp-memory-index',
+  '__pycache__',
+  '.DS_Store',
+  'dist',
+  'build',
+  '.next',
+  '.cache',
+  '.venv',
+  'venv',
+]);
+
+const MAX_FILES = 500;
+
+function isBinary(buffer: Buffer): boolean {
+  // Check the first 8KB for null bytes — a simple heuristic for binary files
+  const len = Math.min(buffer.length, 8192);
+  for (let i = 0; i < len; i++) {
+    if (buffer[i] === 0) return true;
+  }
+  return false;
+}
+
+export function collectFiles(dir: string): MemoryFile[] {
   const files: MemoryFile[] = [];
 
-  for (const entry of entries) {
-    if (entry.isSymbolicLink()) continue;
-    if (!entry.isFile()) continue;
-    if (!entry.name.endsWith('.md')) continue;
+  // Build a single Ignore instance that maps all .gitignore patterns to root-relative paths
+  function loadIgnoreRules(rootDir: string): Ignore {
+    const ig = ignore();
 
-    const parentPath = entry.parentPath ?? entry.path;
-    const fullPath = path.join(parentPath, entry.name);
-    const relativePath = path.relative(dir, fullPath);
-    const content = fs.readFileSync(fullPath, 'utf-8');
+    function scanForGitignores(currentDir: string): void {
+      const gitignorePath = path.join(currentDir, '.gitignore');
+      if (fs.existsSync(gitignorePath)) {
+        const prefix = path.relative(rootDir, currentDir);
+        const rules = fs.readFileSync(gitignorePath, 'utf-8');
+        for (const line of rules.split('\n')) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) continue;
+          // Prefix the pattern so it matches root-relative paths
+          if (prefix) {
+            ig.add(prefix + '/' + trimmed);
+          } else {
+            ig.add(trimmed);
+          }
+        }
+      }
 
-    files.push({ path: relativePath, content });
+      let entries: fs.Dirent[];
+      try {
+        entries = fs.readdirSync(currentDir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        if (!entry.isDirectory() || entry.isSymbolicLink()) continue;
+        if (ALWAYS_SKIP_DIRS.has(entry.name)) continue;
+        scanForGitignores(path.join(currentDir, entry.name));
+      }
+    }
+
+    scanForGitignores(rootDir);
+    return ig;
   }
+
+  function walk(currentDir: string, ig: Ignore): void {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    } catch {
+      return; // permission denied, etc.
+    }
+
+    for (const entry of entries) {
+      if (entry.isSymbolicLink()) continue;
+
+      const name = entry.name;
+
+      if (entry.isDirectory()) {
+        if (ALWAYS_SKIP_DIRS.has(name)) continue;
+        const relDir = path.relative(dir, path.join(currentDir, name)) + '/';
+        if (ig.ignores(relDir)) continue;
+        walk(path.join(currentDir, name), ig);
+        if (files.length >= MAX_FILES) return;
+        continue;
+      }
+
+      if (!entry.isFile()) continue;
+      if (files.length >= MAX_FILES) return;
+
+      const fullPath = path.join(currentDir, name);
+      const relativePath = path.relative(dir, fullPath);
+
+      if (ig.ignores(relativePath)) continue;
+
+      // Skip binary files
+      let buf: Buffer;
+      try {
+        buf = fs.readFileSync(fullPath);
+      } catch {
+        continue;
+      }
+      if (isBinary(buf)) continue;
+
+      files.push({ path: relativePath, content: buf.toString('utf-8') });
+    }
+  }
+
+  const ig = loadIgnoreRules(dir);
+  walk(dir, ig);
 
   return files;
 }
+
+/** @deprecated Use collectFiles instead */
+export const collectMdFiles = collectFiles;
 
 // --- Text chunking ---
 
@@ -171,7 +272,9 @@ function getIndexDir(basePath: string): string {
 
 async function loadZvec() {
   try {
-    return await import('@zvec/zvec');
+    // Dynamic import() of this CJS package puts most exports on .default
+    const mod = await import('@zvec/zvec');
+    return mod.default ?? mod;
   } catch {
     console.error(chalk.red('Error: @zvec/zvec is not installed.'));
     console.error(`Install it with: ${chalk.cyan('npm install @zvec/zvec')}`);
@@ -200,15 +303,19 @@ async function indexMemory(pathArg: string): Promise<void> {
 
   const zvec = await loadZvec();
 
-  console.log(chalk.gray(`Collecting .md files from ${resolvedPath}...`));
-  const files = collectMdFiles(resolvedPath);
+  console.log(chalk.gray(`Collecting files from ${resolvedPath}...`));
+  const files = collectFiles(resolvedPath);
 
   if (files.length === 0) {
-    console.log(chalk.yellow('No .md files found in the specified directory.'));
+    console.log(chalk.yellow('No files found in the specified directory.'));
     return;
   }
 
-  console.log(chalk.gray(`Found ${files.length} .md file(s). Chunking and indexing...`));
+  if (files.length >= MAX_FILES) {
+    console.log(chalk.yellow(`Warning: reached ${MAX_FILES} file limit. Some files may be excluded.`));
+  }
+
+  console.log(chalk.gray(`Found ${files.length} file(s). Chunking and indexing...`));
 
   // Chunk all files
   const allChunks: TextChunk[] = [];
@@ -248,7 +355,7 @@ async function indexMemory(pathArg: string): Promise<void> {
         name: 'embedding',
         dataType: zvec.ZVecDataType.VECTOR_FP32,
         dimension: VECTOR_DIM,
-        indexParams: { type: zvec.ZVecIndexType.HNSW },
+        indexParams: { indexType: zvec.ZVecIndexType.HNSW },
       },
     ],
   });
@@ -389,13 +496,17 @@ async function pushMemory(pathArg: string): Promise<void> {
 
   const { baseUrl, token } = getAccountsAuth();
 
-  console.log(chalk.gray(`Collecting .md files from ${resolvedPath}...`));
+  console.log(chalk.gray(`Collecting files from ${resolvedPath}...`));
 
-  const files = collectMdFiles(resolvedPath);
+  const files = collectFiles(resolvedPath);
 
   if (files.length === 0) {
-    console.log(chalk.yellow('No .md files found in the specified directory.'));
+    console.log(chalk.yellow('No files found in the specified directory.'));
     return;
+  }
+
+  if (files.length >= MAX_FILES) {
+    console.log(chalk.yellow(`Warning: reached ${MAX_FILES} file limit. Some files may be excluded.`));
   }
 
   for (const file of files) {
@@ -601,21 +712,23 @@ function showMemoryHelp(): void {
   console.log(chalk.bold('Memory Commands:'));
   console.log();
   console.log(chalk.bold.underline('Cloud Backup'));
-  console.log('  ' + chalk.cyan('npx atxp memory push --path <dir>') + '     ' + 'Push .md files to server');
-  console.log('  ' + chalk.cyan('npx atxp memory pull --path <dir>') + '     ' + 'Pull .md files from server');
+  console.log('  ' + chalk.cyan('npx atxp memory push --path <dir>') + '     ' + 'Push files to server');
+  console.log('  ' + chalk.cyan('npx atxp memory pull --path <dir>') + '     ' + 'Pull files from server');
   console.log('  ' + chalk.cyan('npx atxp memory status') + '                ' + 'Show backup & index info');
   console.log();
   console.log(chalk.bold.underline('Local Search'));
-  console.log('  ' + chalk.cyan('npx atxp memory index --path <dir>') + '    ' + 'Index .md files for search');
+  console.log('  ' + chalk.cyan('npx atxp memory index --path <dir>') + '    ' + 'Index files for search');
   console.log('  ' + chalk.cyan('npx atxp memory search <query> --path <dir>') + '  Search memories');
   console.log();
   console.log(chalk.bold('Details:'));
-  console.log('  push/pull back up all .md files (recursively) to/from ATXP servers.');
+  console.log('  push/pull back up text files (recursively) to/from ATXP servers.');
+  console.log('  Respects .gitignore rules; skips node_modules, .git, and binary files.');
   console.log('  Files are compressed into a zip archive before upload.');
   console.log('  Each push replaces the previous server snapshot entirely.');
   console.log('  Pull writes server files to the local directory (non-destructive).');
+  console.log(`  Maximum ${MAX_FILES} files per push/index.`);
   console.log();
-  console.log('  index scans .md files, chunks them by heading, and builds a local');
+  console.log('  index scans text files, chunks them by heading, and builds a local');
   console.log('  vector search index using zvec. search finds relevant memory chunks');
   console.log('  by similarity. No network access needed for index/search.');
   console.log();
