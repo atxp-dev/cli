@@ -4,6 +4,7 @@ import chalk from 'chalk';
 import open from 'open';
 import qrcode from 'qrcode-terminal';
 import { saveConnection, updateShellProfile, CONFIG_FILE, getShellProfile } from './config.js';
+import { getContext } from './vendor/context.js';
 
 interface LoginOptions {
   force?: boolean;
@@ -25,6 +26,9 @@ export async function login(options: LoginOptions = {}): Promise<void> {
   console.log();
 
   try {
+    // Collect runtime context for rate limiting
+    const ctx = await getContext().catch(() => '');
+
     let connectionString: string;
 
     // If token provided directly, use it (headless mode)
@@ -38,13 +42,31 @@ export async function login(options: LoginOptions = {}): Promise<void> {
       console.log('Using provided token for headless authentication...');
     } else if (options.qr) {
       // QR code mode explicitly requested
-      connectionString = await loginWithQRCode();
+      connectionString = await loginWithQRCode(ctx);
     } else {
       // Try browser first, fall back to QR code on failure
-      connectionString = await loginWithBrowserOrQR();
+      connectionString = await loginWithBrowserOrQR(ctx);
     }
 
     saveConnection(connectionString);
+
+    // Report context for headless token mode (browser/QR modes include it in the URL)
+    if (options.token && ctx) {
+      try {
+        const url = new URL(connectionString);
+        const token = url.searchParams.get('connection_token');
+        const baseUrl = `${url.protocol}//${url.host}`;
+        if (token) {
+          await fetch(`${baseUrl}/ctx`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ ctx }),
+          }).catch(() => {});
+        }
+      } catch {
+        // Ignore - non-critical
+      }
+    }
 
     // Try to auto-update shell profile
     const profileUpdated = updateShellProfile();
@@ -97,12 +119,12 @@ function isHeadlessEnvironment(): boolean {
 /**
  * Try browser login first, fall back to QR code if it fails
  */
-async function loginWithBrowserOrQR(): Promise<string> {
+async function loginWithBrowserOrQR(ctx: string): Promise<string> {
   // If we detect a headless environment, go straight to QR
   if (isHeadlessEnvironment()) {
     console.log(chalk.yellow('Headless environment detected, using QR code login...'));
     console.log();
-    return loginWithQRCode();
+    return loginWithQRCode(ctx);
   }
 
   // Try browser-based login
@@ -137,7 +159,8 @@ async function loginWithBrowserOrQR(): Promise<string> {
       }
 
       const redirectUri = `http://localhost:${port}/callback`;
-      const loginUrl = `https://accounts.atxp.ai?cli_redirect=${encodeURIComponent(redirectUri)}`;
+      let loginUrl = `https://accounts.atxp.ai?cli_redirect=${encodeURIComponent(redirectUri)}`;
+      if (ctx) loginUrl += `&ctx=${encodeURIComponent(ctx)}`;
 
       console.log('Opening browser to complete login...');
       console.log(chalk.gray(`(${loginUrl})`));
@@ -154,7 +177,7 @@ async function loginWithBrowserOrQR(): Promise<string> {
           console.log();
           server.close();
           try {
-            const result = await loginWithQRCode();
+            const result = await loginWithQRCode(ctx);
             resolve(result);
           } catch (qrError) {
             reject(qrError);
@@ -171,7 +194,7 @@ async function loginWithBrowserOrQR(): Promise<string> {
         console.log();
         server.close();
         try {
-          const result = await loginWithQRCode();
+          const result = await loginWithQRCode(ctx);
           resolve(result);
         } catch (qrError) {
           reject(qrError);
@@ -195,7 +218,7 @@ async function loginWithBrowserOrQR(): Promise<string> {
 /**
  * QR code based login - shows QR in terminal for mobile scanning
  */
-async function loginWithQRCode(): Promise<string> {
+async function loginWithQRCode(ctx: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       const url = new URL(req.url!, `http://localhost`);
@@ -227,7 +250,8 @@ async function loginWithQRCode(): Promise<string> {
       }
 
       const redirectUri = `http://localhost:${port}/callback`;
-      const loginUrl = `https://accounts.atxp.ai?cli_redirect=${encodeURIComponent(redirectUri)}`;
+      let loginUrl = `https://accounts.atxp.ai?cli_redirect=${encodeURIComponent(redirectUri)}`;
+      if (ctx) loginUrl += `&ctx=${encodeURIComponent(ctx)}`;
 
       console.log(chalk.bold('Scan this QR code with your phone to login:'));
       console.log();

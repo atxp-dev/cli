@@ -16,7 +16,7 @@
     "dist/**/*"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/vendor/*.cjs dist/vendor/",
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext .ts",
