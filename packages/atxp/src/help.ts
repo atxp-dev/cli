@@ -29,6 +29,7 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('whoami') + '             ' + 'Show your account info (ID, email, wallet)');
   console.log('  ' + chalk.cyan('agent') + ' ' + chalk.yellow('<command>') + '   ' + 'Create and manage agent accounts');
   console.log('  ' + chalk.cyan('topup') + ' ' + chalk.yellow('[options]') + '  ' + 'Create a payment link to fund your agent');
+  console.log('  ' + chalk.cyan('memory') + ' ' + chalk.yellow('<command>') + '  ' + 'Manage, search, and back up agent memory files');
   console.log();
 
   console.log(chalk.bold('PAAS (Platform as a Service):'));
@@ -102,6 +103,14 @@ export function showHelp(): void {
   console.log('  npx atxp topup                         # Create a $10 payment link');
   console.log('  npx atxp topup --amount 100            # Create a $100 payment link');
   console.log('  npx atxp topup --amount 25 --open      # Create link and open in browser');
+  console.log();
+
+  console.log(chalk.bold('Memory Examples:'));
+  console.log('  npx atxp memory push --path ~/.openclaw/workspace-abc/');
+  console.log('  npx atxp memory pull --path ~/.openclaw/workspace-abc/');
+  console.log('  npx atxp memory index --path ~/.openclaw/workspace-abc/');
+  console.log('  npx atxp memory search "auth flow" --path ~/.openclaw/workspace-abc/');
+  console.log('  npx atxp memory status --path ~/.openclaw/workspace-abc/');
   console.log();
 
   console.log(chalk.bold('PAAS Examples:'));

@@ -1,4 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'fs';
+import JSZip from 'jszip';
+import os from 'os';
+import path from 'path';
+import { collectMdFiles, chunkMarkdown, textToVector } from './memory.js';
 
 describe('Tool Commands', () => {
   describe('search command', () => {
@@ -163,6 +168,234 @@ describe('Tool Commands', () => {
       expect(computeBalance({ balance: { iou: 3.14 } })).toBe(3.14);
       expect(computeBalance({ balance: {} })).toBe(0);
       expect(computeBalance({})).toBeNull();
+    });
+  });
+
+  describe('memory command', () => {
+    let tmpDir: string;
+
+    beforeEach(() => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'atxp-memory-test-'));
+    });
+
+    afterEach(() => {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    });
+
+    it('should collect .md files and ignore non-.md files', () => {
+      fs.writeFileSync(path.join(tmpDir, 'README.md'), '# Hello');
+      fs.writeFileSync(path.join(tmpDir, 'notes.txt'), 'not included');
+      fs.writeFileSync(path.join(tmpDir, 'config.json'), '{}');
+
+      const files = collectMdFiles(tmpDir);
+
+      expect(files).toHaveLength(1);
+      expect(files[0].path).toBe('README.md');
+      expect(files[0].content).toBe('# Hello');
+    });
+
+    it('should collect .md files recursively from subdirectories', () => {
+      const subDir = path.join(tmpDir, 'memory');
+      fs.mkdirSync(subDir);
+      fs.writeFileSync(path.join(tmpDir, 'SOUL.md'), '# Soul');
+      fs.writeFileSync(path.join(subDir, 'session.md'), '# Session');
+
+      const files = collectMdFiles(tmpDir);
+      const paths = files.map(f => f.path).sort();
+
+      expect(paths).toEqual(['SOUL.md', path.join('memory', 'session.md')]);
+    });
+
+    it('should compute relative paths correctly', () => {
+      const deep = path.join(tmpDir, 'a', 'b', 'c');
+      fs.mkdirSync(deep, { recursive: true });
+      fs.writeFileSync(path.join(deep, 'deep.md'), 'deep');
+
+      const files = collectMdFiles(tmpDir);
+
+      expect(files).toHaveLength(1);
+      expect(files[0].path).toBe(path.join('a', 'b', 'c', 'deep.md'));
+    });
+
+    it('should return empty array for directory with no .md files', () => {
+      fs.writeFileSync(path.join(tmpDir, 'file.txt'), 'text');
+      fs.writeFileSync(path.join(tmpDir, 'data.json'), '{}');
+
+      const files = collectMdFiles(tmpDir);
+
+      expect(files).toHaveLength(0);
+    });
+
+    it('should return empty array for empty directory', () => {
+      const files = collectMdFiles(tmpDir);
+      expect(files).toHaveLength(0);
+    });
+
+    it('should validate --path is required for push/pull', () => {
+      const validatePath = (pathArg: string | undefined) => {
+        return pathArg && pathArg.trim().length > 0;
+      };
+
+      expect(validatePath('/some/dir')).toBeTruthy();
+      expect(validatePath('')).toBeFalsy();
+      expect(validatePath(undefined)).toBeFalsy();
+    });
+
+    it('should construct correct API URLs', () => {
+      const baseUrl = 'https://accounts.atxp.ai';
+
+      expect(`${baseUrl}/backup/files`).toBe('https://accounts.atxp.ai/backup/files');
+      expect(`${baseUrl}/backup/status`).toBe('https://accounts.atxp.ai/backup/status');
+    });
+
+    it('should create a zip archive from collected files', async () => {
+      fs.writeFileSync(path.join(tmpDir, 'SOUL.md'), '# Soul');
+      const subDir = path.join(tmpDir, 'memory');
+      fs.mkdirSync(subDir);
+      fs.writeFileSync(path.join(subDir, 'session.md'), '# Session notes');
+
+      const files = collectMdFiles(tmpDir);
+
+      const zip = new JSZip();
+      for (const file of files) {
+        zip.file(file.path, file.content);
+      }
+      const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 } });
+
+      expect(zipBuffer.length).toBeGreaterThan(0);
+      expect(zipBuffer.length).toBeLessThan(
+        files.reduce((sum, f) => sum + Buffer.byteLength(f.content, 'utf-8'), 0) + 1024
+      );
+    });
+
+    it('should round-trip files through zip compression', async () => {
+      fs.writeFileSync(path.join(tmpDir, 'README.md'), '# README\nSome content here.');
+      const subDir = path.join(tmpDir, 'memory');
+      fs.mkdirSync(subDir);
+      fs.writeFileSync(path.join(subDir, 'log.md'), '## Log\n- Entry 1\n- Entry 2');
+
+      const files = collectMdFiles(tmpDir);
+
+      // Create zip
+      const zip = new JSZip();
+      for (const file of files) {
+        zip.file(file.path, file.content);
+      }
+      const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 } });
+
+      // Extract zip
+      const extracted = await JSZip.loadAsync(zipBuffer);
+      const extractedNames = Object.keys(extracted.files).filter(n => !extracted.files[n].dir);
+
+      expect(extractedNames.sort()).toEqual(files.map(f => f.path).sort());
+
+      for (const file of files) {
+        const content = await extracted.files[file.path].async('string');
+        expect(content).toBe(file.content);
+      }
+    });
+
+    it('should produce a smaller zip than raw JSON payload', async () => {
+      // Create a file with repetitive content that compresses well
+      const repeatedContent = '# Memory\n\n' + 'This is a repeated line of memory content.\n'.repeat(100);
+      fs.writeFileSync(path.join(tmpDir, 'MEMORY.md'), repeatedContent);
+
+      const files = collectMdFiles(tmpDir);
+      const jsonSize = Buffer.byteLength(JSON.stringify({ files }), 'utf-8');
+
+      const zip = new JSZip();
+      for (const file of files) {
+        zip.file(file.path, file.content);
+      }
+      const zipBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 9 } });
+
+      expect(zipBuffer.length).toBeLessThan(jsonSize);
+    });
+  });
+
+  describe('chunkMarkdown', () => {
+    it('should split markdown by headings', () => {
+      const content = '# Title\nSome intro text.\n\n## Section A\nContent A.\n\n## Section B\nContent B.';
+      const chunks = chunkMarkdown('test.md', content);
+
+      expect(chunks).toHaveLength(3);
+      expect(chunks[0].heading).toBe('Title');
+      expect(chunks[0].text).toContain('Some intro text.');
+      expect(chunks[1].heading).toBe('Section A');
+      expect(chunks[1].text).toContain('Content A.');
+      expect(chunks[2].heading).toBe('Section B');
+      expect(chunks[2].text).toContain('Content B.');
+    });
+
+    it('should use file path as heading for content without headings', () => {
+      const content = 'Just some plain text\nwith multiple lines.';
+      const chunks = chunkMarkdown('notes.md', content);
+
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0].heading).toBe('notes.md');
+      expect(chunks[0].filePath).toBe('notes.md');
+      expect(chunks[0].text).toBe('Just some plain text\nwith multiple lines.');
+    });
+
+    it('should return empty array for empty content', () => {
+      const chunks = chunkMarkdown('empty.md', '');
+      expect(chunks).toHaveLength(0);
+    });
+
+    it('should handle h1, h2, and h3 headings', () => {
+      const content = '# H1\nOne\n## H2\nTwo\n### H3\nThree';
+      const chunks = chunkMarkdown('test.md', content);
+
+      expect(chunks).toHaveLength(3);
+      expect(chunks[0].heading).toBe('H1');
+      expect(chunks[1].heading).toBe('H2');
+      expect(chunks[2].heading).toBe('H3');
+    });
+
+    it('should track start line numbers', () => {
+      const content = '# Title\nLine 2\n\n## Section\nLine 5';
+      const chunks = chunkMarkdown('test.md', content);
+
+      expect(chunks[0].startLine).toBe(1);
+      expect(chunks[1].startLine).toBe(4);
+    });
+  });
+
+  describe('textToVector', () => {
+    it('should return a vector of length 256', () => {
+      const vec = textToVector('hello world');
+      expect(vec).toHaveLength(256);
+    });
+
+    it('should return a normalized vector', () => {
+      const vec = textToVector('the quick brown fox jumps over the lazy dog');
+      const norm = Math.sqrt(vec.reduce((sum, v) => sum + v * v, 0));
+      expect(norm).toBeCloseTo(1.0, 4);
+    });
+
+    it('should return zero vector for empty input', () => {
+      const vec = textToVector('');
+      const allZero = vec.every((v) => v === 0);
+      expect(allZero).toBe(true);
+    });
+
+    it('should produce similar vectors for similar text', () => {
+      const vec1 = textToVector('authentication login flow');
+      const vec2 = textToVector('authentication login process');
+      const vec3 = textToVector('ocean waves sunset beach');
+
+      // Cosine similarity (vectors are already normalized)
+      const sim12 = vec1.reduce((sum, v, i) => sum + v * vec2[i], 0);
+      const sim13 = vec1.reduce((sum, v, i) => sum + v * vec3[i], 0);
+
+      // Similar texts should have higher similarity than dissimilar ones
+      expect(sim12).toBeGreaterThan(sim13);
+    });
+
+    it('should be deterministic', () => {
+      const vec1 = textToVector('test input');
+      const vec2 = textToVector('test input');
+      expect(vec1).toEqual(vec2);
     });
   });
 

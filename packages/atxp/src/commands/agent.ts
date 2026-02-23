@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { getConnection } from '../config.js';
+import { getContext } from '../vendor/context.js';
 
 const DEFAULT_ACCOUNTS_URL = 'https://accounts.atxp.ai';
 
@@ -89,12 +90,15 @@ async function createAgent(): Promise<void> {
 
   console.log(chalk.gray('Creating agent...'));
 
+  const ctx = await getContext().catch(() => '');
+
   const res = await fetch(`${baseUrl}/agents`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
+    body: JSON.stringify(ctx ? { ctx } : {}),
   });
 
   if (!res.ok) {
@@ -140,9 +144,12 @@ async function registerAgent(): Promise<void> {
 
   console.log(chalk.gray(`Registering agent at ${baseUrl}...`));
 
+  const ctx = await getContext().catch(() => '');
+
   const res = await fetch(`${baseUrl}/agents/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(ctx ? { ctx } : {}),
   });
 
   if (!res.ok) {
