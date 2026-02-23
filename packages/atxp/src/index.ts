@@ -18,8 +18,9 @@ import { depositCommand } from './commands/deposit.js';
 import { paasCommand } from './commands/paas/index.js';
 import { agentCommand } from './commands/agent.js';
 import { whoamiCommand } from './commands/whoami.js';
-import { topupCommand } from './commands/topup.js';
+
 import { memoryCommand, type MemoryOptions } from './commands/memory.js';
+import { transactionsCommand } from './commands/transactions.js';
 
 interface DemoOptions {
   port: number;
@@ -94,7 +95,7 @@ function parseArgs(): {
 
   // Check for help flags early - but NOT for paas or email commands (they handle --help internally)
   const helpFlag = process.argv.includes('--help') || process.argv.includes('-h');
-  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'agent' && command !== 'topup' && command !== 'memory' && command !== 'backup') {
+  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'agent' && command !== 'fund' && command !== 'deposit' && command !== 'memory' && command !== 'backup') {
     return {
       command: 'help',
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
@@ -342,10 +343,6 @@ async function main() {
       await agentCommand(subCommand || '');
       break;
 
-    case 'topup':
-      await topupCommand();
-      break;
-
     case 'memory':
       await memoryCommand(subCommand || '', memoryOptions, process.argv.slice(4).filter((arg) => !arg.startsWith('-')).join(' '));
       break;
@@ -353,6 +350,10 @@ async function main() {
     case 'backup':
       // Backward compatibility: 'backup' is an alias for 'memory'
       await memoryCommand(subCommand || '', memoryOptions, process.argv.slice(4).filter((arg) => !arg.startsWith('-')).join(' '));
+      break;
+
+    case 'transactions':
+      await transactionsCommand();
       break;
 
     case 'dev':

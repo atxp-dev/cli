@@ -25,11 +25,11 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('x') + ' ' + chalk.yellow('<query>') + '        ' + 'Search X/Twitter');
   console.log('  ' + chalk.cyan('email') + ' ' + chalk.yellow('<command>') + '   ' + 'Send and receive emails');
   console.log('  ' + chalk.cyan('balance') + '            ' + 'Check your ATXP account balance');
-  console.log('  ' + chalk.cyan('fund') + '               ' + 'Show how to fund your account');
+  console.log('  ' + chalk.cyan('fund') + ' ' + chalk.yellow('[options]') + '     ' + 'Show funding options (crypto + payment links)');
   console.log('  ' + chalk.cyan('whoami') + '             ' + 'Show your account info (ID, email, wallet)');
   console.log('  ' + chalk.cyan('agent') + ' ' + chalk.yellow('<command>') + '   ' + 'Create and manage agent accounts');
-  console.log('  ' + chalk.cyan('topup') + ' ' + chalk.yellow('[options]') + '  ' + 'Create a payment link to fund your agent');
   console.log('  ' + chalk.cyan('memory') + ' ' + chalk.yellow('<command>') + '  ' + 'Manage, search, and back up agent memory files');
+  console.log('  ' + chalk.cyan('transactions') + ' ' + chalk.yellow('[options]') + ' ' + 'View recent transaction history');
   console.log();
 
   console.log(chalk.bold('PAAS (Platform as a Service):'));
@@ -90,7 +90,7 @@ export function showHelp(): void {
   console.log('  npx atxp email claim-username myname    # Claim a username ($1.00)');
   console.log('  npx atxp email release-username         # Release your username');
   console.log('  npx atxp balance                       # Check account balance');
-  console.log('  npx atxp fund                          # Show how to fund your account');
+  console.log('  npx atxp fund                          # Show all funding options');
   console.log('  npx atxp whoami                        # Show account info');
   console.log('  npx atxp dev demo                      # Run the demo');
   console.log('  npx atxp dev create my-app             # Create a new project');
@@ -100,9 +100,11 @@ export function showHelp(): void {
   console.log('  npx atxp agent create                  # Create a new agent (requires login)');
   console.log('  npx atxp agent list                    # List your agents (requires login)');
   console.log('  npx atxp agent register                # Self-register as an agent (no login)');
-  console.log('  npx atxp topup                         # Create a $10 payment link');
-  console.log('  npx atxp topup --amount 100            # Create a $100 payment link');
-  console.log('  npx atxp topup --amount 25 --open      # Create link and open in browser');
+  console.log('  npx atxp fund                          # Show all funding options');
+  console.log('  npx atxp fund --amount 100             # Request a $100 payment link');
+  console.log('  npx atxp fund --amount 25 --open       # Create link and open in browser');
+  console.log('  npx atxp transactions                  # Show last 10 transactions');
+  console.log('  npx atxp transactions --limit 20       # Show last 20 transactions');
   console.log();
 
   console.log(chalk.bold('Memory Examples:'));

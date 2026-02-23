@@ -19,8 +19,8 @@
     "build": "tsc && cp -r src/vendor/*.cjs dist/vendor/",
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix",
+    "lint": "eslint . --ext .ts --ignore-pattern 'src/vendor/'",
+    "lint:fix": "eslint . --ext .ts --fix --ignore-pattern 'src/vendor/'",
     "test": "vitest run",
     "prepublishOnly": "npm run build"
   },
