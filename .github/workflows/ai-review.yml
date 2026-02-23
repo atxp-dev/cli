@@ -1,0 +1,100 @@
+name: AI Code Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, synchronize]
+
+jobs:
+  ai-review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude PR Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          use_sticky_comment: "true"
+          claude_args: |
+            --allowedTools "Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr review:*),Bash(git diff:*),Bash(git log:*),Read,Glob,Grep"
+          prompt: |
+            Review pull request #${{ github.event.pull_request.number }} and post a review to GitHub.
+
+            ## Step 1: Gather context
+
+            Get the PR details and diff:
+            ```
+            gh pr view ${{ github.event.pull_request.number }}
+            gh pr diff ${{ github.event.pull_request.number }}
+            ```
+
+            ## Step 2: Review the code changes
+
+            Perform a thorough code review analyzing:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Security concerns (credentials, injection, OWASP top 10)
+            - Performance considerations
+            - Breaking changes or regressions
+
+            ## Step 3: Determine review outcome
+
+            Based on findings, choose one:
+            - **APPROVE** (`--approve`): Code looks good, no significant issues
+            - **REQUEST_CHANGES** (`--request-changes`): Critical issues that must be fixed before merging
+            - **COMMENT** (`--comment`): Suggestions or minor issues that don't block merging
+
+            Prefer COMMENT over REQUEST_CHANGES unless there are genuine bugs, security issues, or breaking changes.
+
+            ## Step 4: Post the review
+
+            Post to GitHub using:
+            ```
+            gh pr review ${{ github.event.pull_request.number }} --body "YOUR_REVIEW_BODY" --approve|--request-changes|--comment
+            ```
+
+            Format the review body as:
+
+            ```markdown
+            ## AI Code Review
+
+            **Recommendation**: APPROVE | REQUEST_CHANGES | COMMENT
+
+            ### Summary
+            [1-2 sentence overview of what this PR does]
+
+            <details>
+            <summary>Actionable Feedback (N items)</summary>
+
+            - [ ] `file:line` - Description of issue or required change
+            - [ ] General: Description of non-file-specific feedback
+
+            </details>
+
+            <details>
+            <summary>Detailed Review</summary>
+
+            ### Code Quality
+            [Analysis of code patterns, readability, maintainability]
+
+            ### Security
+            [Any security considerations]
+
+            ### Suggestions
+            [Optional improvements]
+
+            ### Positive Notes
+            [What was done well]
+
+            </details>
+            ```
+
+            **Important:** The `gh pr review` command produces no output on success. Only run it once — do not retry if there is no output, as that indicates success.
