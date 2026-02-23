@@ -439,9 +439,15 @@ async function main() {
       showHelp();
       break;
 
-    case undefined:
-      showHelp();
+    case undefined: {
+      const { execSync } = await import('child_process');
+      try {
+        execSync('npx skills add https://github.com/atxp-dev/cli --skill atxp', { stdio: 'inherit' });
+      } catch {
+        process.exit(1);
+      }
       break;
+    }
 
     default:
       console.log(`Unknown command: ${command}`);

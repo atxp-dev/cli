@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import fs from 'fs';
 import ignore, { type Ignore } from 'ignore';
 import JSZip from 'jszip';
+import os from 'os';
 import path from 'path';
 import { getConnection } from '../config.js';
 
@@ -270,14 +271,54 @@ function getIndexDir(basePath: string): string {
   return path.join(basePath, INDEX_DIR_NAME);
 }
 
+const ZVEC_DEPS_DIR = path.join(os.homedir(), '.atxp', 'deps');
+
+async function tryImportZvec() {
+  // Dynamic import() of this CJS package puts most exports on .default
+  const mod = await import('@zvec/zvec');
+  return mod.default ?? mod;
+}
+
+async function tryImportZvecFromCache() {
+  const { createRequire } = await import('module');
+  const require = createRequire(path.join(ZVEC_DEPS_DIR, 'node_modules', '_'));
+  const mod = require('@zvec/zvec');
+  return mod;
+}
+
 async function loadZvec() {
+  // Try normal import first (works if installed as a dependency)
   try {
-    // Dynamic import() of this CJS package puts most exports on .default
-    const mod = await import('@zvec/zvec');
-    return mod.default ?? mod;
+    return await tryImportZvec();
   } catch {
-    console.error(chalk.red('Error: @zvec/zvec is not installed.'));
-    console.error(`Install it with: ${chalk.cyan('npm install @zvec/zvec')}`);
+    // not available via normal resolution
+  }
+
+  // Try loading from the cached install location
+  try {
+    return await tryImportZvecFromCache();
+  } catch {
+    // not installed yet — fall through to auto-install
+  }
+
+  // Auto-install on first use into ~/.atxp/deps
+  console.log(chalk.gray('Installing @zvec/zvec (one-time setup for local search)...'));
+  const { execSync } = await import('child_process');
+  try {
+    fs.mkdirSync(ZVEC_DEPS_DIR, { recursive: true });
+    execSync('npm install --prefix ' + ZVEC_DEPS_DIR + ' @zvec/zvec@^0.2.0', {
+      stdio: 'pipe',
+      env: { ...process.env, npm_config_loglevel: 'error' },
+    });
+  } catch {
+    console.error(chalk.red('Failed to install @zvec/zvec.'));
+    console.error(`Install it manually: ${chalk.cyan('npm install @zvec/zvec')}`);
+    process.exit(1);
+  }
+  try {
+    return await tryImportZvecFromCache();
+  } catch {
+    console.error(chalk.red('Error: @zvec/zvec installed but failed to load.'));
     process.exit(1);
   }
 }
