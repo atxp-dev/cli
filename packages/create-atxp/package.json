@@ -1,6 +1,6 @@
 {
   "name": "create-atxp",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "description": "Create ATXP projects - Scaffold new ATXP applications from templates",
   "license": "MIT",
   "repository": {
@@ -31,7 +31,7 @@
     "template"
   ],
   "dependencies": {
-    "atxp": "1.16.0"
+    "atxp": "1.17.0"
   },
   "devDependencies": {
     "eslint": "^9.32.0",
