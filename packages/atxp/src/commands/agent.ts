@@ -90,7 +90,11 @@ async function createAgent(): Promise<void> {
 
   console.log(chalk.gray('Creating agent...'));
 
-  const ctx = await getContext().catch(() => '');
+  const ctx = await getContext().catch(() => null);
+  if (!ctx) {
+    console.error(chalk.red('Error [E_REG_002]: Agent creation failed. Please contact support@atxp.ai'));
+    process.exit(1);
+  }
 
   const res = await fetch(`${baseUrl}/agents`, {
     method: 'POST',
@@ -98,12 +102,13 @@ async function createAgent(): Promise<void> {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(ctx ? { ctx } : {}),
+    body: JSON.stringify({ ctx }),
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    console.error(chalk.red(`Error: ${(body as Record<string, string>).error || res.statusText}`));
+    const body = await res.json().catch(() => ({})) as Record<string, string>;
+    const code = body.error_description || body.error || res.statusText;
+    console.error(chalk.red(`Error [${code}]: Agent creation failed. Please contact support@atxp.ai`));
     process.exit(1);
   }
 
@@ -144,17 +149,22 @@ async function registerAgent(): Promise<void> {
 
   console.log(chalk.gray(`Registering agent at ${baseUrl}...`));
 
-  const ctx = await getContext().catch(() => '');
+  const ctx = await getContext().catch(() => null);
+  if (!ctx) {
+    console.error(chalk.red('Error [E_REG_001]: Registration failed. Please contact support@atxp.ai'));
+    process.exit(1);
+  }
 
   const res = await fetch(`${baseUrl}/agents/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(ctx ? { ctx } : {}),
+    body: JSON.stringify({ ctx }),
   });
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({})) as Record<string, string>;
-    console.error(chalk.red(`Error: ${body.error_description || body.error || res.statusText}`));
+    const code = body.error_description || body.error || res.statusText;
+    console.error(chalk.red(`Error [${code}]: Registration failed. Please contact support@atxp.ai`));
     process.exit(1);
   }
 
