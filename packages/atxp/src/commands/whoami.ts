@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { getConnection } from '../config.js';
+import { callTool } from '../call-tool.js';
 
 const DEFAULT_ACCOUNTS_URL = 'https://accounts.atxp.ai';
 
@@ -42,12 +43,19 @@ export async function whoamiCommand(): Promise<void> {
 
   try {
     const credentials = Buffer.from(`${token}:`).toString('base64');
-    const response = await fetch(`${baseUrl}/me`, {
-      headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/json',
-      },
-    });
+
+    // Fetch account info and phone number in parallel
+    const [response, phoneNumber] = await Promise.all([
+      fetch(`${baseUrl}/me`, {
+        headers: {
+          'Authorization': `Basic ${credentials}`,
+          'Content-Type': 'application/json',
+        },
+      }),
+      callTool('phone.mcp.atxp.ai', 'phone_check_sms', {})
+        .then((r) => { try { return JSON.parse(r).phoneNumber || null; } catch { return null; } })
+        .catch(() => null),
+    ]);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -78,6 +86,9 @@ export async function whoamiCommand(): Promise<void> {
     console.log('  ' + chalk.bold('Account Type:') + '      ' + (data.accountType || 'human'));
     if (data.email) {
       console.log('  ' + chalk.bold('Email:') + '             ' + chalk.cyan(data.email));
+    }
+    if (phoneNumber) {
+      console.log('  ' + chalk.bold('Phone:') + '             ' + chalk.cyan(phoneNumber));
     }
     if (data.displayName) {
       console.log('  ' + chalk.bold('Display Name:') + '      ' + data.displayName);
