@@ -30,6 +30,7 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('whoami') + '             ' + 'Show your account info (ID, email, wallet)');
   console.log('  ' + chalk.cyan('agent') + ' ' + chalk.yellow('<command>') + '   ' + 'Create and manage agent accounts');
   console.log('  ' + chalk.cyan('memory') + ' ' + chalk.yellow('<command>') + '  ' + 'Manage, search, and back up agent memory files');
+  console.log('  ' + chalk.cyan('contacts') + ' ' + chalk.yellow('<command>') + '' + 'Manage local contacts with cloud backup');
   console.log('  ' + chalk.cyan('transactions') + ' ' + chalk.yellow('[options]') + ' ' + 'View recent transaction history');
   console.log();
 
@@ -92,9 +93,12 @@ export function showHelp(): void {
   console.log('  npx atxp email release-username         # Release your username');
   console.log('  npx atxp phone register                 # Register a phone number ($2.00)');
   console.log('  npx atxp phone sms                      # Check SMS inbox');
+  console.log('  npx atxp phone sms --unread-only        # Show only unread SMS');
+  console.log('  npx atxp phone sms --direction incoming  # Show only received SMS');
   console.log('  npx atxp phone send-sms --to "+14155551234" --body "Hello!"');
   console.log('  npx atxp phone call --to "+14155551234" --instruction "Ask about hours"');
   console.log('  npx atxp phone calls                    # Check call history');
+  console.log('  npx atxp phone calls --direction sent   # Show only outgoing calls');
   console.log('  npx atxp phone read-call <callId>       # Read call transcript');
   console.log('  npx atxp phone search "appointment"     # Search SMS and calls');
   console.log('  npx atxp balance                       # Check account balance');
@@ -121,6 +125,17 @@ export function showHelp(): void {
   console.log('  npx atxp memory index --path ~/.openclaw/workspace-abc/');
   console.log('  npx atxp memory search "auth flow" --path ~/.openclaw/workspace-abc/');
   console.log('  npx atxp memory status --path ~/.openclaw/workspace-abc/');
+  console.log();
+
+  console.log(chalk.bold('Contacts Examples:'));
+  console.log('  npx atxp contacts add --name "Kenny" --phone "+14155551234" --email "kenny@example.com"');
+  console.log('  npx atxp contacts list');
+  console.log('  npx atxp contacts show c_a7f3x');
+  console.log('  npx atxp contacts edit c_a7f3x --phone "+14155559999"');
+  console.log('  npx atxp contacts remove c_a7f3x');
+  console.log('  npx atxp contacts search "Kenny"');
+  console.log('  npx atxp contacts push');
+  console.log('  npx atxp contacts pull');
   console.log();
 
   console.log(chalk.bold('PAAS Examples:'));

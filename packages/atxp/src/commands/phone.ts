@@ -13,6 +13,8 @@ export interface PhoneOptions {
   knowledgeBase?: string[];
   voiceDescription?: string;
   knowledgeBaseContent?: string;
+  unreadOnly?: boolean;
+  direction?: string;
 }
 
 function showPhoneHelp(): void {
@@ -24,14 +26,14 @@ function showPhoneHelp(): void {
   console.log('  ' + chalk.cyan('npx atxp phone configure-voice') + ' ' + chalk.yellow('<options>') + '        ' + 'Configure voice agent settings');
   console.log();
   console.log(chalk.bold('  SMS:'));
-  console.log('  ' + chalk.cyan('npx atxp phone sms') + '                                ' + 'Check SMS inbox');
+  console.log('  ' + chalk.cyan('npx atxp phone sms') + ' ' + chalk.yellow('[--unread-only] [--direction <dir>]') + '  ' + 'Check SMS inbox');
   console.log('  ' + chalk.cyan('npx atxp phone read-sms') + ' ' + chalk.yellow('<messageId>') + '             ' + 'Read a specific SMS');
   console.log('  ' + chalk.cyan('npx atxp phone send-sms') + ' ' + chalk.yellow('<options>') + '               ' + 'Send an SMS ($0.05)');
   console.log('  ' + chalk.cyan('npx atxp phone get-attachment') + ' ' + chalk.yellow('<options>') + '         ' + 'Download an MMS attachment');
   console.log();
   console.log(chalk.bold('  Voice:'));
   console.log('  ' + chalk.cyan('npx atxp phone call') + ' ' + chalk.yellow('<options>') + '                   ' + 'Make a voice call ($0.10)');
-  console.log('  ' + chalk.cyan('npx atxp phone calls') + '                              ' + 'Check call history');
+  console.log('  ' + chalk.cyan('npx atxp phone calls') + ' ' + chalk.yellow('[--direction <dir>]') + '       ' + 'Check call history');
   console.log('  ' + chalk.cyan('npx atxp phone read-call') + ' ' + chalk.yellow('<callId>') + '              ' + 'Read call details & transcript');
   console.log();
   console.log(chalk.bold('  Search:'));
@@ -56,15 +58,23 @@ function showPhoneHelp(): void {
   console.log('  ' + chalk.yellow('--message') + ' ' + chalk.gray('<id>') + '    ' + 'Message ID (required)');
   console.log('  ' + chalk.yellow('--index') + ' ' + chalk.gray('<n>') + '       ' + 'Attachment index, 0-based (required)');
   console.log();
+  console.log(chalk.bold('Filter Options (sms / calls):'));
+  console.log('  ' + chalk.yellow('--unread-only') + '          ' + 'Only show unread messages (sms only)');
+  console.log('  ' + chalk.yellow('--direction') + ' ' + chalk.gray('<dir>') + '    ' + 'Filter by direction: "incoming" or "sent"');
+  console.log();
   console.log(chalk.bold('Examples:'));
   console.log('  npx atxp phone register');
   console.log('  npx atxp phone register --area-code 415');
   console.log('  npx atxp phone sms');
+  console.log('  npx atxp phone sms --unread-only');
+  console.log('  npx atxp phone sms --direction incoming');
+  console.log('  npx atxp phone sms --unread-only --direction incoming');
   console.log('  npx atxp phone read-sms sms_abc123');
   console.log('  npx atxp phone send-sms --to "+14155551234" --body "Hello!"');
   console.log('  npx atxp phone send-sms --to "+14155551234" --body "Check this" --media "https://example.com/image.jpg"');
   console.log('  npx atxp phone call --to "+14155551234" --instruction "Ask about their business hours"');
   console.log('  npx atxp phone calls');
+  console.log('  npx atxp phone calls --direction sent');
   console.log('  npx atxp phone read-call call_abc123');
   console.log('  npx atxp phone configure-voice --agent-name "Alex" --voice-description "warm friendly female voice" --knowledge-base "docs/**/*.md"');
   console.log('  npx atxp phone search "appointment"');
@@ -104,7 +114,7 @@ export async function phoneCommand(subCommand: string, options: PhoneOptions, po
       break;
 
     case 'sms':
-      await checkSms();
+      await checkSms(options);
       break;
 
     case 'read-sms':
@@ -124,7 +134,7 @@ export async function phoneCommand(subCommand: string, options: PhoneOptions, po
       break;
 
     case 'calls':
-      await checkCalls();
+      await checkCalls(options);
       break;
 
     case 'read-call':
@@ -228,8 +238,16 @@ async function configureVoice(options: PhoneOptions): Promise<void> {
   }
 }
 
-async function checkSms(): Promise<void> {
-  const result = await callTool(SERVER, 'phone_check_sms', {});
+async function checkSms(options: PhoneOptions): Promise<void> {
+  const args: Record<string, unknown> = {};
+  if (options.unreadOnly) {
+    args.unread_only = true;
+  }
+  if (options.direction) {
+    args.direction = options.direction;
+  }
+
+  const result = await callTool(SERVER, 'phone_check_sms', args);
 
   try {
     const parsed = JSON.parse(result);
@@ -253,7 +271,7 @@ async function checkSms(): Promise<void> {
 
     for (const msg of parsed.messages) {
       const readIndicator = msg.read === false ? chalk.yellow(' [UNREAD]') : '';
-      const dirIndicator = msg.direction === 'inbound' ? chalk.blue(' [IN]') : chalk.green(' [OUT]');
+      const dirIndicator = msg.direction === 'incoming' ? chalk.blue(' [IN]') : chalk.green(' [OUT]');
       console.log(chalk.gray('ID: ' + msg.id) + dirIndicator + readIndicator);
       console.log(chalk.bold('From: ') + msg.from);
       console.log(chalk.bold('To: ') + msg.to);
@@ -292,7 +310,7 @@ async function readSms(messageId?: string): Promise<void> {
     }
 
     const msg = parsed.message;
-    const dirIndicator = msg.direction === 'inbound' ? chalk.blue('[IN]') : chalk.green('[OUT]');
+    const dirIndicator = msg.direction === 'incoming' ? chalk.blue('[IN]') : chalk.green('[OUT]');
     console.log(chalk.bold('Direction: ') + dirIndicator);
     console.log(chalk.bold('From: ') + msg.from);
     console.log(chalk.bold('To: ') + msg.to);
@@ -429,8 +447,13 @@ async function makeCall(options: PhoneOptions): Promise<void> {
   }
 }
 
-async function checkCalls(): Promise<void> {
-  const result = await callTool(SERVER, 'phone_check_calls', {});
+async function checkCalls(options: PhoneOptions): Promise<void> {
+  const args: Record<string, unknown> = {};
+  if (options.direction) {
+    args.direction = options.direction;
+  }
+
+  const result = await callTool(SERVER, 'phone_check_calls', args);
 
   try {
     const parsed = JSON.parse(result);
@@ -453,7 +476,7 @@ async function checkCalls(): Promise<void> {
     console.log();
 
     for (const call of parsed.calls) {
-      const dirIndicator = call.direction === 'inbound' ? chalk.blue(' [IN]') : chalk.green(' [OUT]');
+      const dirIndicator = call.direction === 'incoming' ? chalk.blue(' [IN]') : chalk.green(' [OUT]');
       console.log(chalk.gray('ID: ' + call.id) + dirIndicator);
       console.log(chalk.bold('From: ') + call.from);
       console.log(chalk.bold('To: ') + call.to);
@@ -493,7 +516,7 @@ async function readCall(callId?: string): Promise<void> {
     }
 
     const call = parsed.call;
-    const dirIndicator = call.direction === 'inbound' ? chalk.blue('[IN]') : chalk.green('[OUT]');
+    const dirIndicator = call.direction === 'incoming' ? chalk.blue('[IN]') : chalk.green('[OUT]');
     console.log(chalk.bold('Direction: ') + dirIndicator);
     console.log(chalk.bold('From: ') + call.from);
     console.log(chalk.bold('To: ') + call.to);
@@ -569,7 +592,7 @@ async function searchPhone(query?: string): Promise<void> {
       console.log();
       for (const msg of parsed.sms) {
         const readIndicator = msg.read === false ? chalk.yellow(' [UNREAD]') : '';
-        const dirIndicator = msg.direction === 'inbound' ? chalk.blue(' [IN]') : chalk.green(' [OUT]');
+        const dirIndicator = msg.direction === 'incoming' ? chalk.blue(' [IN]') : chalk.green(' [OUT]');
         console.log(chalk.gray('ID: ' + msg.id) + dirIndicator + readIndicator);
         console.log(chalk.bold('From: ') + msg.from + chalk.bold(' To: ') + msg.to);
         if (msg.body) {
@@ -585,7 +608,7 @@ async function searchPhone(query?: string): Promise<void> {
       console.log(chalk.bold(`Calls (${parsed.calls.length}):`));
       console.log();
       for (const call of parsed.calls) {
-        const dirIndicator = call.direction === 'inbound' ? chalk.blue(' [IN]') : chalk.green(' [OUT]');
+        const dirIndicator = call.direction === 'incoming' ? chalk.blue(' [IN]') : chalk.green(' [OUT]');
         console.log(chalk.gray('ID: ' + call.id) + dirIndicator);
         console.log(chalk.bold('From: ') + call.from + chalk.bold(' To: ') + call.to);
         console.log(chalk.bold('Status: ') + call.status);

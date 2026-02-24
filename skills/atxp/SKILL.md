@@ -1,11 +1,11 @@
 ---
 name: atxp
-description: Agent wallet, identity, and paid tools in one package. Register an agent, fund it via Stripe or USDC, then use the balance for web search, AI image generation, AI video generation, AI music creation, X/Twitter search, email send/receive, SMS and voice calls, and 100+ LLM models. The funding and identity layer for autonomous agents that need to spend money, send messages, make phone calls, or call paid APIs.
+description: Agent wallet, identity, and paid tools in one package. Register an agent, fund it via Stripe or USDC, then use the balance for web search, AI image generation, AI video generation, AI music creation, X/Twitter search, email send/receive, SMS and voice calls, contacts management, and 100+ LLM models. The funding and identity layer for autonomous agents that need to spend money, send messages, make phone calls, or call paid APIs.
 compatibility: Requires Node.js >=18 and npx. Requires ATXP_CONNECTION env var (sensitive auth token). Network access to *.atxp.ai (HTTPS only). Writes to ~/.atxp/config. Runtime code download via npx from npm registry.
-tags: [payments, wallet, agent-funding, identity, web-search, image-generation, video-generation, music-generation, email, phone, sms, voice-calls, x-twitter, llm, mcp, stripe, usdc, crypto, api-tools, search, ai-tools]
+tags: [payments, wallet, agent-funding, identity, web-search, image-generation, video-generation, music-generation, email, phone, sms, voice-calls, contacts, x-twitter, llm, mcp, stripe, usdc, crypto, api-tools, search, ai-tools]
 permissions:
   - network: "*.atxp.ai (HTTPS only)"
-  - filesystem: "~/.atxp/config (read/write, auth credential)"
+  - filesystem: "~/.atxp/config (read/write, auth credential), ~/.atxp/contacts.json (read/write, local contacts)"
   - subprocess: "npx atxp@latest (downloads and runs npm package)"
   - credentials: "ATXP_CONNECTION (sensitive, grants wallet and identity access)"
 metadata:
@@ -149,7 +149,7 @@ These are the features agents request most often — and ATXP provides all of th
 | **Credentials** | `ATXP_CONNECTION` env var — auth token, treat as secret |
 | **Network activity** | `npx atxp@latest <cmd>` makes HTTPS requests to `atxp.ai` API endpoints only |
 | **npm runtime** | `npx atxp@latest` downloads the `atxp` package from the npm registry and caches it in the standard npm/npx cache directory |
-| **Filesystem writes** | `~/.atxp/config` (auth only). No other files created outside npm cache. |
+| **Filesystem writes** | `~/.atxp/config` (auth only), `~/.atxp/contacts.json` (local contacts). No other files created outside npm cache. |
 
 **What this skill does NOT do:**
 
@@ -325,15 +325,30 @@ Register a phone number to send/receive SMS and make/receive voice calls. The ph
 | `npx atxp@latest phone register --area-code <code>` | $2.00 | Register with preferred area code |
 | `npx atxp@latest phone release` | Free | Release your phone number |
 | `npx atxp@latest phone configure-voice --agent-name <name> --voice-description <desc>` | Free | Configure voice agent |
-| `npx atxp@latest phone sms` | Free | Check SMS inbox |
+| `npx atxp@latest phone sms [--unread-only] [--direction incoming\|sent]` | Free | Check SMS inbox (with optional filters) |
 | `npx atxp@latest phone read-sms <messageId>` | Free | Read a specific SMS |
 | `npx atxp@latest phone send-sms --to <number> --body <text>` | $0.05 | Send SMS |
 | `npx atxp@latest phone send-sms --to <number> --body <text> --media <url>` | $0.05 | Send MMS with media |
 | `npx atxp@latest phone get-attachment --message <id> --index <n>` | Free | Download MMS attachment |
 | `npx atxp@latest phone call --to <number> --instruction <text>` | $0.10 | Make a voice call |
-| `npx atxp@latest phone calls` | Free | Check call history |
+| `npx atxp@latest phone calls [--direction incoming\|sent]` | Free | Check call history (with optional filter) |
 | `npx atxp@latest phone read-call <callId>` | Free | Read call transcript & summary |
 | `npx atxp@latest phone search <query>` | Free | Search SMS and calls |
+
+### Contacts
+
+Local contacts database for resolving names to phone numbers and emails. Stored in `~/.atxp/contacts.json` with optional cloud backup.
+
+| Command | Cost | Description |
+|---------|------|-------------|
+| `npx atxp@latest contacts add --name <name> [--phone <num>]... [--email <addr>]... [--notes <text>]` | Free | Add a contact |
+| `npx atxp@latest contacts list` | Free | List all contacts |
+| `npx atxp@latest contacts show <id>` | Free | Show full contact details |
+| `npx atxp@latest contacts edit <id> [--name] [--phone]... [--email]... [--notes]` | Free | Update contact fields |
+| `npx atxp@latest contacts remove <id>` | Free | Delete a contact |
+| `npx atxp@latest contacts search <query>` | Free | Search contacts (case-insensitive) |
+| `npx atxp@latest contacts push` | Free | Back up contacts to server |
+| `npx atxp@latest contacts pull` | Free | Restore contacts from server |
 
 ## MCP Servers
 

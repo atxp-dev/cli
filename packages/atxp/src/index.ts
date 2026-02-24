@@ -21,6 +21,7 @@ import { agentCommand } from './commands/agent.js';
 import { whoamiCommand } from './commands/whoami.js';
 
 import { memoryCommand, type MemoryOptions } from './commands/memory.js';
+import { contactsCommand, type ContactsOptions } from './commands/contacts.js';
 import { transactionsCommand } from './commands/transactions.js';
 
 interface DemoOptions {
@@ -58,6 +59,15 @@ interface PhoneOptionsLocal {
   knowledgeBase?: string[];
   voiceDescription?: string;
   knowledgeBaseContent?: string;
+  unreadOnly?: boolean;
+  direction?: string;
+}
+
+interface ContactsOptionsLocal {
+  name?: string;
+  phone?: string[];
+  email?: string[];
+  notes?: string;
 }
 
 interface PaasOptions {
@@ -103,13 +113,14 @@ function parseArgs(): {
   paasArgs: string[];
   toolArgs: string;
   memoryOptions: MemoryOptions;
+  contactsOptions: ContactsOptionsLocal;
 } {
   const command = process.argv[2];
   const subCommand = process.argv[3];
 
   // Check for help flags early - but NOT for paas or email commands (they handle --help internally)
   const helpFlag = process.argv.includes('--help') || process.argv.includes('-h');
-  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'phone' && command !== 'agent' && command !== 'fund' && command !== 'deposit' && command !== 'memory' && command !== 'backup') {
+  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'phone' && command !== 'agent' && command !== 'fund' && command !== 'deposit' && command !== 'memory' && command !== 'backup' && command !== 'contacts') {
     return {
       command: 'help',
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
@@ -121,6 +132,7 @@ function parseArgs(): {
       paasArgs: [],
       toolArgs: '',
       memoryOptions: {},
+      contactsOptions: {},
     };
   }
 
@@ -251,12 +263,22 @@ function parseArgs(): {
     knowledgeBase: getAllArgValues('--knowledge-base'),
     voiceDescription: getArgValue('--voice-description', ''),
     knowledgeBaseContent: getArgValue('--knowledge-content', ''),
+    unreadOnly: process.argv.includes('--unread-only'),
+    direction: getArgValue('--direction', ''),
   };
 
   // Parse memory options
   const memoryOptions: MemoryOptions = {
     path: getArgValue('--path', ''),
     topk: getArgValue('--topk', '') ? parseInt(getArgValue('--topk', '')!, 10) : undefined,
+  };
+
+  // Parse contacts options
+  const contactsOptions: ContactsOptionsLocal = {
+    name: getArgValue('--name', ''),
+    phone: getAllArgValues('--phone'),
+    email: getAllArgValues('--email'),
+    notes: getArgValue('--notes', ''),
   };
 
   return {
@@ -271,10 +293,11 @@ function parseArgs(): {
     paasArgs,
     toolArgs,
     memoryOptions,
+    contactsOptions,
   };
 }
 
-const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, memoryOptions } = parseArgs();
+const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, memoryOptions, contactsOptions } = parseArgs();
 
 // Extract positional args from argv, skipping flag values (e.g., --path <val> --topk <val>)
 function extractPositionalArgs(startIndex: number): string {
@@ -398,6 +421,10 @@ async function main() {
     case 'backup':
       // Backward compatibility: 'backup' is an alias for 'memory'
       await memoryCommand(subCommand || '', memoryOptions, extractPositionalArgs(4));
+      break;
+
+    case 'contacts':
+      await contactsCommand(subCommand || '', contactsOptions, process.argv[4]);
       break;
 
     case 'transactions':
