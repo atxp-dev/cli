@@ -11,6 +11,6 @@ export async function videoCommand(prompt: string): Promise<void> {
     process.exit(1);
   }
 
-  const result = await callTool(SERVER, TOOL, { prompt: prompt.trim() });
+  const result = await callTool(SERVER, TOOL, { userPrompt: prompt.trim() });
   console.log(result);
 }
