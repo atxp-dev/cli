@@ -1,8 +1,13 @@
 import chalk from 'chalk';
+import { createRequire } from 'module';
 import { getConnection } from '../config.js';
 import { getContext } from '../vendor/context.js';
 
+const require = createRequire(import.meta.url);
+const { version } = require('../../package.json') as { version: string };
+
 const DEFAULT_ACCOUNTS_URL = 'https://accounts.atxp.ai';
+const ATXP_CLIENT_HEADER = `cli/${version}`;
 
 function getAccountsAuth(): { baseUrl: string; token: string } {
   const connection = getConnection();
@@ -101,7 +106,7 @@ async function createAgent(): Promise<void> {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
-      'X-ATXP-Client': 'cli/1.19.1',
+      'X-ATXP-Client': ATXP_CLIENT_HEADER,
     },
     body: JSON.stringify({ ctx }),
   });
@@ -158,7 +163,7 @@ async function registerAgent(): Promise<void> {
 
   const res = await fetch(`${baseUrl}/agents/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-ATXP-Client': 'cli/1.19.1' },
+    headers: { 'Content-Type': 'application/json', 'X-ATXP-Client': ATXP_CLIENT_HEADER },
     body: JSON.stringify({ ctx }),
   });
 
@@ -200,6 +205,7 @@ async function listAgents(): Promise<void> {
   const res = await fetch(`${baseUrl}/agents`, {
     headers: {
       'Authorization': `Bearer ${token}`,
+      'X-ATXP-Client': ATXP_CLIENT_HEADER,
     },
   });
 
