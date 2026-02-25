@@ -1,6 +1,7 @@
 {
   "name": "atxp",
   "version": "1.21.0",
+  "mcpName": "io.github.atxp-dev/atxp",
   "description": "ATXP CLI - Command line tool for creating ATXP projects and running demos",
   "license": "MIT",
   "repository": {
