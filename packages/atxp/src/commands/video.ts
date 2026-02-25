@@ -47,9 +47,9 @@ export async function videoCommand(prompt: string): Promise<void> {
       })) as ToolResult;
 
       const pollText = extractResult(pollResult);
-      let parsed: any;
+      let parsed: Record<string, unknown>;
       try {
-        parsed = JSON.parse(pollText);
+        parsed = JSON.parse(pollText) as Record<string, unknown>;
       } catch {
         spinner.stop();
         console.log(pollText);
@@ -63,7 +63,7 @@ export async function videoCommand(prompt: string): Promise<void> {
         return;
       } else if (parsed.status === 'failed' || parsed.error) {
         spinner.fail('Video generation failed');
-        console.error(chalk.red(parsed.error || JSON.stringify(parsed)));
+        console.error(chalk.red((parsed.error as string) || JSON.stringify(parsed)));
         process.exit(1);
       }
 
