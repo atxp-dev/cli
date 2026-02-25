@@ -101,6 +101,7 @@ async function createAgent(): Promise<void> {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
+      'X-ATXP-Client': 'cli/1.19.1',
     },
     body: JSON.stringify({ ctx }),
   });
@@ -157,7 +158,7 @@ async function registerAgent(): Promise<void> {
 
   const res = await fetch(`${baseUrl}/agents/register`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-ATXP-Client': 'cli/1.19.1' },
     body: JSON.stringify({ ctx }),
   });
 
