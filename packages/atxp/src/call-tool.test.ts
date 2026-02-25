@@ -21,15 +21,15 @@ describe('Call Tool', () => {
     it('should map commands to correct tool names', () => {
       const toolMap: Record<string, string> = {
         search: 'search_search',
-        image: 'image_create_image',
-        music: 'music_create',
+        image: 'image_create_image_async',
+        music: 'music_create_async',
         video: 'create_video',
         x: 'x_live_search',
       };
 
       expect(toolMap.search).toBe('search_search');
-      expect(toolMap.image).toBe('image_create_image');
-      expect(toolMap.music).toBe('music_create');
+      expect(toolMap.image).toBe('image_create_image_async');
+      expect(toolMap.music).toBe('music_create_async');
       expect(toolMap.video).toBe('create_video');
       expect(toolMap.x).toBe('x_live_search');
     });

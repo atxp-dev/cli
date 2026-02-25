@@ -16,11 +16,9 @@ export interface ToolResult {
   content: Array<{ type: string; text?: string; data?: string; mimeType?: string }>;
 }
 
-export async function callTool(
-  server: string,
-  tool: string,
-  args: Record<string, unknown>
-): Promise<string> {
+export type McpClient = Awaited<ReturnType<typeof atxpClient>>;
+
+export async function getClient(server: string): Promise<McpClient> {
   const connection = getConnection();
 
   if (!connection) {
@@ -29,31 +27,40 @@ export async function callTool(
     process.exit(1);
   }
 
+  return atxpClient({
+    mcpServer: `https://${server}`,
+    account: new ATXPAccount(connection),
+    oAuthDb: getOAuthDb(),
+    logger: getCliLogger(),
+  });
+}
+
+export function extractResult(result: ToolResult): string {
+  if (result.content && result.content.length > 0) {
+    const content = result.content[0];
+    if (content.text) {
+      return content.text;
+    } else if (content.data && content.mimeType) {
+      return `[${content.mimeType} data received - ${content.data.length} bytes base64]`;
+    }
+  }
+  return JSON.stringify(result, null, 2);
+}
+
+export async function callTool(
+  server: string,
+  tool: string,
+  args: Record<string, unknown>
+): Promise<string> {
   try {
-    const client = await atxpClient({
-      mcpServer: `https://${server}`,
-      account: new ATXPAccount(connection),
-      oAuthDb: getOAuthDb(),
-      logger: getCliLogger(),
-    });
+    const client = await getClient(server);
 
     const result = (await client.callTool({
       name: tool,
       arguments: args,
     })) as ToolResult;
 
-    // Handle different content types
-    if (result.content && result.content.length > 0) {
-      const content = result.content[0];
-      if (content.text) {
-        return content.text;
-      } else if (content.data && content.mimeType) {
-        // For binary content (images, audio, video), return info about it
-        return `[${content.mimeType} data received - ${content.data.length} bytes base64]`;
-      }
-    }
-
-    return JSON.stringify(result, null, 2);
+    return extractResult(result);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(chalk.red(`Error calling ${tool}: ${errorMessage}`));

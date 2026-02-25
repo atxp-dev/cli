@@ -38,14 +38,14 @@ describe('Tool Commands', () => {
 
   describe('image command', () => {
     const SERVER = 'image.mcp.atxp.ai';
-    const TOOL = 'image_create_image';
+    const TOOL = 'image_create_image_async';
 
     it('should have correct server', () => {
       expect(SERVER).toBe('image.mcp.atxp.ai');
     });
 
     it('should have correct tool name', () => {
-      expect(TOOL).toBe('image_create_image');
+      expect(TOOL).toBe('image_create_image_async');
     });
 
     it('should validate prompt is required', () => {
@@ -60,14 +60,14 @@ describe('Tool Commands', () => {
 
   describe('music command', () => {
     const SERVER = 'music.mcp.atxp.ai';
-    const TOOL = 'music_create';
+    const TOOL = 'music_create_async';
 
     it('should have correct server', () => {
       expect(SERVER).toBe('music.mcp.atxp.ai');
     });
 
     it('should have correct tool name', () => {
-      expect(TOOL).toBe('music_create');
+      expect(TOOL).toBe('music_create_async');
     });
 
     it('should validate prompt is required', () => {
