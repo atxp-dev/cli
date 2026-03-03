@@ -40,9 +40,9 @@ Get your connection string from: https://accounts.atxp.ai
 **Options:**
 - `--force` - Update connection string even if already set
 
-After login, source the config to use in your terminal:
+After login, verify your connection:
 ```bash
-source ~/.atxp/config
+npx atxp whoami
 ```
 
 ### Tools

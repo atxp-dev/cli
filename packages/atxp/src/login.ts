@@ -3,7 +3,7 @@ import fs from 'fs';
 import chalk from 'chalk';
 import open from 'open';
 import qrcode from 'qrcode-terminal';
-import { saveConnection, updateShellProfile, CONFIG_FILE, getShellProfile } from './config.js';
+import { saveConnection } from './config.js';
 import { getContext } from './vendor/context.js';
 
 interface LoginOptions {
@@ -68,35 +68,14 @@ export async function login(options: LoginOptions = {}): Promise<void> {
       }
     }
 
-    // Try to auto-update shell profile
-    const profileUpdated = updateShellProfile();
-    const profilePath = getShellProfile();
-
     console.log();
     console.log(chalk.green('Login successful!'));
-
-    if (profileUpdated && profilePath) {
-      console.log();
-      console.log(`Added ATXP to ${chalk.cyan(profilePath)}`);
-      console.log('New terminal windows will automatically have access to ATXP tools.');
-      console.log();
-      console.log('To use ATXP in this terminal session, run:');
-      console.log(chalk.cyan(`  source ${CONFIG_FILE}`));
-    } else if (profilePath) {
-      // Profile exists but wasn't updated (already has source line)
-      console.log();
-      console.log("You're all set! New terminal windows will have access to ATXP tools.");
-      console.log();
-      console.log('To use ATXP in this terminal session, run:');
-      console.log(chalk.cyan(`  source ${CONFIG_FILE}`));
-    } else {
-      // Couldn't detect shell profile - provide manual instructions
-      console.log();
-      console.log('To use ATXP tools in this terminal, run:');
-      console.log(chalk.cyan(`  source ${CONFIG_FILE}`));
-      console.log();
-      console.log('To persist this, add the above line to your shell profile.');
-    }
+    console.log();
+    console.log('Credentials saved to ~/.atxp/config');
+    console.log('All `npx atxp` commands will now use this connection automatically.');
+    console.log();
+    console.log('To verify, run:');
+    console.log(chalk.cyan('  npx atxp whoami'));
   } catch (error) {
     console.error(chalk.red('Login failed:'), error instanceof Error ? error.message : error);
     process.exit(1);

@@ -26,19 +26,49 @@ describe('Login', () => {
   });
 
   describe('config file format', () => {
-    it('should generate correct shell export format', () => {
+    it('should generate correct plain KEY=VALUE format', () => {
       const connectionString = 'test-connection-string';
-      const expectedContent = `export ATXP_CONNECTION="${connectionString}"
-`;
-      expect(expectedContent).toContain('export ATXP_CONNECTION=');
-      expect(expectedContent).toContain(connectionString);
+      const expectedContent = `ATXP_CONNECTION=${connectionString}\n`;
+      expect(expectedContent).toBe('ATXP_CONNECTION=test-connection-string\n');
+      expect(expectedContent).not.toContain('export');
+      expect(expectedContent).not.toContain('"');
     });
 
     it('should handle connection strings with special characters', () => {
-      const connectionString = 'test-string-with-$pecial-chars';
-      const configContent = `export ATXP_CONNECTION="${connectionString}"
-`;
+      const connectionString = 'https://example.com?token=abc&foo=bar';
+      const configContent = `ATXP_CONNECTION=${connectionString}\n`;
       expect(configContent).toContain(connectionString);
+      expect(configContent).not.toContain('export');
+    });
+  });
+
+  describe('config file parsing (backward compatibility)', () => {
+    it('should parse new plain KEY=VALUE format', () => {
+      const content = 'ATXP_CONNECTION=my-connection-string\n';
+      const match = content.match(/^(?:export\s+)?ATXP_CONNECTION=["']?(.+?)["']?\s*$/m);
+      expect(match).not.toBeNull();
+      expect(match![1]).toBe('my-connection-string');
+    });
+
+    it('should parse old export format with double quotes', () => {
+      const content = 'export ATXP_CONNECTION="my-connection-string"\n';
+      const match = content.match(/^(?:export\s+)?ATXP_CONNECTION=["']?(.+?)["']?\s*$/m);
+      expect(match).not.toBeNull();
+      expect(match![1]).toBe('my-connection-string');
+    });
+
+    it('should parse old export format with single quotes', () => {
+      const content = "export ATXP_CONNECTION='my-connection-string'\n";
+      const match = content.match(/^(?:export\s+)?ATXP_CONNECTION=["']?(.+?)["']?\s*$/m);
+      expect(match).not.toBeNull();
+      expect(match![1]).toBe('my-connection-string');
+    });
+
+    it('should parse URLs with special characters in new format', () => {
+      const content = 'ATXP_CONNECTION=https://accounts.atxp.ai?connection_token=abc123&foo=bar\n';
+      const match = content.match(/^(?:export\s+)?ATXP_CONNECTION=["']?(.+?)["']?\s*$/m);
+      expect(match).not.toBeNull();
+      expect(match![1]).toBe('https://accounts.atxp.ai?connection_token=abc123&foo=bar');
     });
   });
 
