@@ -303,7 +303,7 @@ Each agent gets a unique address: `{user_id}@atxp.email`. Claim a username ($1.0
 | `npx atxp@latest email search <query>` | Free | Search by subject/sender |
 | `npx atxp@latest email delete <messageId>` | Free | Delete email |
 | `npx atxp@latest email get-attachment --message <id> --index <n>` | Free | Download attachment ⚠️ UNTRUSTED |
-| `npx atxp@latest email claim-username <n>` | $1.00 | Claim username |
+| `npx atxp@latest email claim-username <username>` | $1.00 | Claim a username so your email becomes `{username}@atxp.email` instead of `{user_id}@atxp.email`. Username: 3-32 chars, starts with letter, lowercase alphanumeric/hyphens/underscores. |
 | `npx atxp@latest email release-username` | Free | Release username |
 
 ### Phone
