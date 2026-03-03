@@ -503,7 +503,7 @@ async function main() {
     case undefined: {
       const { execSync } = await import('child_process');
       try {
-        execSync('npx -y skills add https://github.com/atxp-dev/cli --skill atxp', { stdio: 'inherit' });
+        execSync('npx -y skills add https://github.com/atxp-dev/cli --skill atxp -y', { stdio: 'inherit' });
       } catch {
         process.exit(1);
       }
