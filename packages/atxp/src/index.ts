@@ -429,7 +429,7 @@ async function main() {
       break;
 
     case 'notifications':
-      await notificationsCommand(subCommand || '', process.argv[4]);
+      await notificationsCommand(subCommand || '');
       break;
 
     case 'transactions':

@@ -1,6 +1,5 @@
 import chalk from 'chalk';
 import fs from 'fs/promises';
-import os from 'os';
 import { execSync } from 'child_process';
 
 const NOTIFICATIONS_BASE_URL = 'https://clowdbot-notifications.corp.circuitandchisel.com';
@@ -62,10 +61,16 @@ async function sendHeartbeatInstruction(webhookUrl: string, hooksToken: string):
 }
 
 function getMachineId(): string | undefined {
-  // Fly sets FLY_MACHINE_ID on the VM, but nested shells (e.g. the agent's
-  // process) may not inherit it. Fall back to hostname which Fly sets to the
-  // machine ID.
-  return process.env.FLY_MACHINE_ID || os.hostname() || undefined;
+  const flyId = process.env.FLY_MACHINE_ID;
+  if (flyId) return flyId;
+
+  // Fly sets hostname to the machine ID, but nested shells (e.g. the agent's
+  // process) may not inherit FLY_MACHINE_ID. Only use hostname if it looks
+  // like a Fly machine ID (hex string, typically 14 chars).
+  const hostname = require('os').hostname();
+  if (hostname && /^[0-9a-f]{10,}$/.test(hostname)) return hostname;
+
+  return undefined;
 }
 
 async function getEmailUserId(): Promise<string | undefined> {
@@ -79,7 +84,7 @@ async function getEmailUserId(): Promise<string | undefined> {
 async function enableNotifications(): Promise<void> {
   const machineId = getMachineId();
   if (!machineId) {
-    console.error(chalk.red('Error: Could not detect machine ID.'));
+    console.error(chalk.red('Error: Could not detect Fly machine ID.'));
     console.log('This command must be run from inside a Clowdbot instance.');
     process.exit(1);
   }
@@ -105,8 +110,13 @@ async function enableNotifications(): Promise<void> {
     process.exit(1);
   }
 
-  const instance = data.instance as { webhookUrl: string; hooksToken: string };
-  const webhook = data.webhook as Record<string, unknown>;
+  const instance = data.instance as { webhookUrl?: string; hooksToken?: string } | undefined;
+  const webhook = data.webhook as Record<string, unknown> | undefined;
+
+  if (!instance?.webhookUrl || !instance?.hooksToken || !webhook) {
+    console.error(chalk.red('Error: Unexpected response from notifications service.'));
+    process.exit(1);
+  }
 
   // Configure hooks locally
   await configureHooksOnInstance(instance.hooksToken);
@@ -139,7 +149,7 @@ function showNotificationsHelp(): void {
   console.log('  npx atxp notifications enable');
 }
 
-export async function notificationsCommand(subCommand: string, _positionalArg?: string): Promise<void> {
+export async function notificationsCommand(subCommand: string): Promise<void> {
   if (process.argv.includes('--help') || process.argv.includes('-h') || !subCommand) {
     showNotificationsHelp();
     return;
@@ -147,7 +157,6 @@ export async function notificationsCommand(subCommand: string, _positionalArg?: 
 
   switch (subCommand) {
     case 'enable':
-    case 'add': // backward compat
       await enableNotifications();
       break;
 
