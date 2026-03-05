@@ -2,91 +2,8 @@ import chalk from 'chalk';
 import fs from 'fs/promises';
 import os from 'os';
 import { execSync } from 'child_process';
-import { getConnection } from '../config.js';
 
 const NOTIFICATIONS_BASE_URL = 'https://clowdbot-notifications.corp.circuitandchisel.com';
-
-function getNotificationsAuth(): { baseUrl: string; token: string } {
-  const connection = getConnection();
-  if (!connection) {
-    console.error(chalk.red('Not logged in.'));
-    console.error(`Run: ${chalk.cyan('npx atxp login')}`);
-    process.exit(1);
-  }
-  const url = new URL(connection);
-  const token = url.searchParams.get('connection_token');
-  if (!token) {
-    console.error(chalk.red('Invalid connection string: missing connection_token'));
-    process.exit(1);
-  }
-  return { baseUrl: NOTIFICATIONS_BASE_URL, token };
-}
-
-
-function getArgValue(flag: string): string | undefined {
-  const index = process.argv.findIndex((arg) => arg === flag);
-  return index !== -1 ? process.argv[index + 1] : undefined;
-}
-
-function showNotificationsHelp(): void {
-  console.log(chalk.bold('Notifications Commands:'));
-  console.log();
-  console.log('  ' + chalk.cyan('npx atxp notifications enable') + '              ' + 'Enable push notifications (auto-configured)');
-  console.log('  ' + chalk.cyan('npx atxp notifications list') + '                ' + 'List your notification webhooks');
-  console.log('  ' + chalk.cyan('npx atxp notifications remove <id>') + '         ' + 'Remove a notification webhook');
-  console.log('  ' + chalk.cyan('npx atxp notifications test <id>') + '           ' + 'Send a test event');
-  console.log('  ' + chalk.cyan('npx atxp notifications re-enable <id>') + '      ' + 'Re-enable a disabled webhook');
-  console.log('  ' + chalk.cyan('npx atxp notifications rotate-secret <id>') + '  ' + 'Rotate the signing secret');
-  console.log('  ' + chalk.cyan('npx atxp notifications failures') + '            ' + 'List failed deliveries');
-  console.log('  ' + chalk.cyan('npx atxp notifications replay <id>') + '         ' + 'Replay a failed delivery');
-  console.log();
-  console.log(chalk.bold('Failures Options:'));
-  console.log('  ' + chalk.yellow('--since') + '    ' + 'Time filter (e.g., 1h, 24h, 7d)');
-  console.log();
-  console.log(chalk.bold('Available Events:'));
-  console.log('  ' + chalk.green('email.received') + '   ' + 'Triggered when an inbound email arrives');
-  console.log();
-  console.log(chalk.bold('Examples:'));
-  console.log('  npx atxp notifications enable');
-  console.log('  npx atxp notifications list');
-  console.log('  npx atxp notifications test abc123');
-  console.log('  npx atxp notifications failures --since 24h');
-  console.log('  npx atxp notifications replay def456');
-}
-
-async function apiRequest(
-  method: string,
-  path: string,
-  body?: Record<string, unknown>
-): Promise<Record<string, unknown>> {
-  const { baseUrl, token } = getNotificationsAuth();
-  const headers: Record<string, string> = {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-
-  const res = await fetch(`${baseUrl}${path}`, {
-    method,
-    headers,
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
-  const data = await res.json() as Record<string, unknown>;
-
-  if (!res.ok) {
-    const errorMsg = (data.error as string) || res.statusText;
-    console.error(chalk.red(`Error: ${errorMsg}`));
-    if (data.details) {
-      const details = data.details as string[];
-      for (const d of details) {
-        console.error(chalk.red(`  - ${d}`));
-      }
-    }
-    process.exit(1);
-  }
-
-  return data;
-}
-
 
 /**
  * Configure hooks in openclaw.json on the running instance.
@@ -210,121 +127,20 @@ async function enableNotifications(): Promise<void> {
   await sendHeartbeatInstruction(instance.webhookUrl, instance.hooksToken);
 }
 
-async function listWebhooks(): Promise<void> {
-  const data = await apiRequest('GET', '/webhooks');
-  const webhooks = data.webhooks as Array<Record<string, unknown>>;
-
-  if (!webhooks || webhooks.length === 0) {
-    console.log(chalk.gray('No webhooks registered.'));
-    console.log(`Enable notifications: ${chalk.cyan('npx atxp notifications enable')}`);
-    return;
-  }
-
-  console.log(chalk.bold(`Webhooks (${webhooks.length}):`));
+function showNotificationsHelp(): void {
+  console.log(chalk.bold('Notifications Commands:'));
   console.log();
-
-  for (const wh of webhooks) {
-    const status = wh.enabled
-      ? chalk.green('enabled')
-      : chalk.red(`disabled (${wh.consecutiveFailures} failures)`);
-
-    console.log('  ' + chalk.bold(wh.id as string));
-    console.log('    URL:     ' + (wh.url as string));
-    console.log('    Events:  ' + (wh.eventTypes as string[]).join(', '));
-    console.log('    Auth:    ' + (wh.hasAuthHeader ? chalk.green('configured') : chalk.gray('none')));
-    console.log('    Status:  ' + status);
-    console.log();
-  }
-}
-
-async function removeWebhook(id: string): Promise<void> {
-  if (!id) {
-    console.error(chalk.red('Error: Webhook ID is required'));
-    console.log(`Usage: ${chalk.cyan('npx atxp notifications remove <id>')}`);
-    process.exit(1);
-  }
-
-  await apiRequest('DELETE', `/webhooks/${id}`);
-  console.log(chalk.green('Webhook removed.'));
-}
-
-async function testWebhook(id: string): Promise<void> {
-  if (!id) {
-    console.error(chalk.red('Error: Webhook ID is required'));
-    console.log(`Usage: ${chalk.cyan('npx atxp notifications test <id>')}`);
-    process.exit(1);
-  }
-
-  await apiRequest('POST', `/webhooks/${id}/test`);
-  console.log(chalk.green('Test event dispatched.'));
-}
-
-async function reEnableWebhook(id: string): Promise<void> {
-  if (!id) {
-    console.error(chalk.red('Error: Webhook ID is required'));
-    console.log(`Usage: ${chalk.cyan('npx atxp notifications re-enable <id>')}`);
-    process.exit(1);
-  }
-
-  await apiRequest('POST', `/webhooks/${id}/enable`);
-  console.log(chalk.green('Webhook re-enabled. Failure counter reset.'));
-}
-
-async function rotateSecret(id: string): Promise<void> {
-  if (!id) {
-    console.error(chalk.red('Error: Webhook ID is required'));
-    console.log(`Usage: ${chalk.cyan('npx atxp notifications rotate-secret <id>')}`);
-    process.exit(1);
-  }
-
-  const data = await apiRequest('POST', `/webhooks/${id}/rotate-secret`);
-
-  console.log(chalk.green('Secret rotated.'));
+  console.log('  ' + chalk.cyan('npx atxp notifications enable') + '  ' + 'Enable push notifications (auto-configured)');
   console.log();
-  console.log('  ' + chalk.bold('New Secret:') + '  ' + chalk.yellow(data.secret as string));
+  console.log(chalk.bold('Available Events:'));
+  console.log('  ' + chalk.green('email.received') + '   ' + 'Triggered when an inbound email arrives');
   console.log();
-  console.log(chalk.gray('Save the secret — it will not be shown again.'));
-  console.log(chalk.gray('The old secret is invalid immediately.'));
+  console.log(chalk.bold('Examples:'));
+  console.log('  npx atxp notifications enable');
 }
 
-async function listFailures(): Promise<void> {
-  const since = getArgValue('--since') || '24h';
-  const data = await apiRequest('GET', `/webhooks/failures?since=${since}`);
-  const failures = data.failures as Array<Record<string, unknown>>;
-
-  if (!failures || failures.length === 0) {
-    console.log(chalk.green(`No failed deliveries in the last ${since}.`));
-    return;
-  }
-
-  console.log(chalk.bold(`Failed Deliveries (${failures.length}):`));
-  console.log();
-
-  for (const f of failures) {
-    console.log('  ' + chalk.bold(f.id as string));
-    console.log('    Webhook:  ' + (f.webhookUrl as string));
-    console.log('    Event:    ' + (f.eventType as string));
-    console.log('    Attempts: ' + f.attempts);
-    console.log('    Failed:   ' + (f.lastAttemptAt as string));
-    console.log();
-  }
-
-  console.log(chalk.gray('Replay with: npx atxp notifications replay <id>'));
-}
-
-async function replayFailure(id: string): Promise<void> {
-  if (!id) {
-    console.error(chalk.red('Error: Delivery ID is required'));
-    console.log(`Usage: ${chalk.cyan('npx atxp notifications replay <id>')}`);
-    process.exit(1);
-  }
-
-  await apiRequest('POST', `/webhooks/failures/${id}/replay`);
-  console.log(chalk.green('Delivery replayed.'));
-}
-
-export async function notificationsCommand(subCommand: string, positionalArg?: string): Promise<void> {
-  if (process.argv.includes('--help') || process.argv.includes('-h')) {
+export async function notificationsCommand(subCommand: string, _positionalArg?: string): Promise<void> {
+  if (process.argv.includes('--help') || process.argv.includes('-h') || !subCommand) {
     showNotificationsHelp();
     return;
   }
@@ -333,36 +149,6 @@ export async function notificationsCommand(subCommand: string, positionalArg?: s
     case 'enable':
     case 'add': // backward compat
       await enableNotifications();
-      break;
-
-    case 'list':
-    case 'ls':
-      await listWebhooks();
-      break;
-
-    case 'remove':
-    case 'rm':
-      await removeWebhook(positionalArg || '');
-      break;
-
-    case 'test':
-      await testWebhook(positionalArg || '');
-      break;
-
-    case 're-enable':
-      await reEnableWebhook(positionalArg || '');
-      break;
-
-    case 'rotate-secret':
-      await rotateSecret(positionalArg || '');
-      break;
-
-    case 'failures':
-      await listFailures();
-      break;
-
-    case 'replay':
-      await replayFailure(positionalArg || '');
       break;
 
     default:

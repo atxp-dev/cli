@@ -78,7 +78,7 @@ export async function whoamiCommand(): Promise<void> {
     ]);
 
     if (!data) {
-      console.error(chalk.red('Error: Could not fetch account info.'));
+      console.error(chalk.red('Error: Could not fetch account info. Your token may be invalid or expired.'));
       console.error(`Try logging in again: ${chalk.cyan('npx atxp login --force')}`);
       process.exit(1);
     }
