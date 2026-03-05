@@ -335,6 +335,16 @@ Local contacts database for resolving names to phone numbers and emails. Stored 
 | `npx atxp@latest contacts push` | Free | Back up contacts to server |
 | `npx atxp@latest contacts pull` | Free | Restore contacts from server |
 
+### Notifications
+
+Enable push notifications so your agent receives a POST to its `/hooks/wake` endpoint when events happen (e.g., inbound email), instead of polling.
+
+| Command | Cost | Description |
+|---------|------|-------------|
+| `npx atxp@latest notifications enable` | Free | Enable push notifications (auto-configured) |
+
+Setup is zero-config for OpenClaw instances — the webhook URL and auth token are auto-discovered. Just run `notifications enable`.
+
 ## MCP Servers
 
 For programmatic access, ATXP exposes MCP-compatible tool servers:
