@@ -31,6 +31,7 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('agent') + ' ' + chalk.yellow('<command>') + '   ' + 'Create and manage agent accounts');
   console.log('  ' + chalk.cyan('memory') + ' ' + chalk.yellow('<command>') + '  ' + 'Manage, search, and back up agent memory files');
   console.log('  ' + chalk.cyan('contacts') + ' ' + chalk.yellow('<command>') + '' + 'Manage local contacts with cloud backup');
+  console.log('  ' + chalk.cyan('notifications') + ' ' + chalk.yellow('<cmd>') + ' ' + 'Manage push notifications');
   console.log('  ' + chalk.cyan('transactions') + ' ' + chalk.yellow('[options]') + ' ' + 'View recent transaction history');
   console.log();
 
@@ -117,6 +118,15 @@ export function showHelp(): void {
   console.log('  npx atxp fund --amount 25 --open       # Create link and open in browser');
   console.log('  npx atxp transactions                  # Show last 10 transactions');
   console.log('  npx atxp transactions --limit 20       # Show last 20 transactions');
+  console.log();
+
+  console.log(chalk.bold('Notifications Examples:'));
+  console.log('  npx atxp notifications enable           # Enable push notifications (auto-configured)');
+  console.log('  npx atxp notifications list             # List your notification webhooks');
+  console.log('  npx atxp notifications test abc123      # Send a test event');
+  console.log('  npx atxp notifications failures --since 24h  # Show failed deliveries');
+  console.log('  npx atxp notifications replay def456    # Replay a failed delivery');
+  console.log('  npx atxp notifications rotate-secret abc123  # Rotate signing secret');
   console.log();
 
   console.log(chalk.bold('Memory Examples:'));
