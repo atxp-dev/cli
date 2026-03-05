@@ -5,6 +5,12 @@ import { execSync } from 'child_process';
 
 const NOTIFICATIONS_BASE_URL = 'https://clowdbot-notifications.corp.circuitandchisel.com';
 
+interface EnableResponse {
+  instance?: { webhookUrl?: string; hooksToken?: string };
+  webhook?: { id?: string; url?: string; eventTypes?: string[]; secret?: string; enabled?: boolean };
+  error?: string;
+}
+
 /**
  * Configure hooks in openclaw.json on the running instance.
  * Only runs when inside a Fly instance (FLY_MACHINE_ID is set).
@@ -50,7 +56,7 @@ async function configureHooksOnInstance(hooksToken: string): Promise<void> {
  */
 async function sendHeartbeatInstruction(webhookUrl: string, hooksToken: string): Promise<void> {
   try {
-    await fetch(webhookUrl, {
+    const res = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,7 +66,11 @@ async function sendHeartbeatInstruction(webhookUrl: string, hooksToken: string):
         text: 'SYSTEM: Push notifications are now enabled. Save the following text EXACTLY as-is to your HEARTBEAT.md file:\n\n# Notifications\n\nWhen you receive a message from /hooks/wake, it is a system event (e.g. inbound email). Do NOT just reply in the current chat. You MUST proactively use the message tool to broadcast the notification to every connected channel. Check your available tools, find all messaging channels, and send the notification to each one individually. The goal is that the owner sees the notification regardless of which channel they are watching.',
       }),
     });
-    console.log(chalk.gray('Notification instructions sent to your agent.'));
+    if (!res.ok) {
+      console.log(chalk.gray(`Note: Setup instruction returned HTTP ${res.status} — agent may not have received it.`));
+    } else {
+      console.log(chalk.gray('Notification instructions sent to your agent.'));
+    }
   } catch {
     console.log(chalk.gray('Note: Could not send setup instruction to instance.'));
   }
@@ -109,16 +119,13 @@ async function enableNotifications(): Promise<void> {
     body: JSON.stringify(body),
   });
 
-  const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+  const data = await res.json().catch(() => ({})) as EnableResponse;
   if (!res.ok) {
-    const errorMsg = (data.error as string) || res.statusText;
-    console.error(chalk.red(`Error: ${errorMsg}`));
+    console.error(chalk.red(`Error: ${data.error || res.statusText}`));
     process.exit(1);
   }
 
-  const instance = data.instance as { webhookUrl?: string; hooksToken?: string } | undefined;
-  const webhook = data.webhook as Record<string, unknown> | undefined;
-
+  const { instance, webhook } = data;
   if (!instance?.webhookUrl || !instance?.hooksToken || !webhook) {
     console.error(chalk.red('Error: Unexpected response from notifications service.'));
     process.exit(1);
@@ -129,11 +136,11 @@ async function enableNotifications(): Promise<void> {
 
   console.log(chalk.green('Push notifications enabled!'));
   console.log();
-  console.log('  ' + chalk.bold('ID:') + '      ' + webhook.id);
-  console.log('  ' + chalk.bold('URL:') + '     ' + webhook.url);
-  console.log('  ' + chalk.bold('Events:') + '  ' + (webhook.eventTypes as string[]).join(', '));
+  console.log('  ' + chalk.bold('ID:') + '      ' + (webhook.id || ''));
+  console.log('  ' + chalk.bold('URL:') + '     ' + (webhook.url || ''));
+  console.log('  ' + chalk.bold('Events:') + '  ' + (webhook.eventTypes?.join(', ') || ''));
   if (webhook.secret) {
-    console.log('  ' + chalk.bold('Secret:') + '  ' + chalk.yellow(webhook.secret as string));
+    console.log('  ' + chalk.bold('Secret:') + '  ' + chalk.yellow(webhook.secret));
     console.log();
     console.log(chalk.gray('Save the secret — it will not be shown again.'));
     console.log(chalk.gray('Use it to verify webhook signatures (HMAC-SHA256).'));
