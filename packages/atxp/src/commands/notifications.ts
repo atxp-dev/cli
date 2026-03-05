@@ -42,6 +42,11 @@ async function configureHooksOnInstance(hooksToken: string): Promise<void> {
 /**
  * Send a one-time instruction to the agent via /hooks/wake so it saves
  * notification handling instructions to its HEARTBEAT.md file.
+ *
+ * Trust boundary: This intentionally injects a system-level prompt into the
+ * agent's memory. The webhook endpoint MUST validate the Authorization header
+ * before acting on the message content. The hardcoded text is controlled by us
+ * (not user input) and tells the agent how to broadcast notifications.
  */
 async function sendHeartbeatInstruction(webhookUrl: string, hooksToken: string): Promise<void> {
   try {

@@ -33,21 +33,35 @@ export interface AccountInfo {
   isOrphan?: boolean;
 }
 
+/**
+ * Fetch account info from the accounts API.
+ * Returns the account data on success, or null on failure.
+ * Callers needing HTTP status details can use fetchAccountInfo() instead.
+ */
 export async function getAccountInfo(): Promise<AccountInfo | null> {
+  const result = await fetchAccountInfo();
+  return result.data ?? null;
+}
+
+/**
+ * Fetch account info with full error context.
+ * Returns { data } on success, { status } on HTTP error, or {} on network/parse failure.
+ */
+export async function fetchAccountInfo(): Promise<{ data?: AccountInfo; status?: number }> {
   const connection = getConnection();
-  if (!connection) return null;
+  if (!connection) return {};
   const token = getConnectionToken(connection);
-  if (!token) return null;
+  if (!token) return {};
   const baseUrl = getBaseUrl(connection);
   try {
     const credentials = Buffer.from(`${token}:`).toString('base64');
     const response = await fetch(`${baseUrl}/me`, {
       headers: { 'Authorization': `Basic ${credentials}` },
     });
-    if (!response.ok) return null;
-    return await response.json() as AccountInfo;
+    if (!response.ok) return { status: response.status };
+    return { data: await response.json() as AccountInfo };
   } catch {
-    return null;
+    return {};
   }
 }
 
@@ -70,15 +84,20 @@ export async function whoamiCommand(): Promise<void> {
 
   try {
     // Fetch account info and phone number in parallel
-    const [data, phoneNumber] = await Promise.all([
-      getAccountInfo(),
+    const [accountResult, phoneNumber] = await Promise.all([
+      fetchAccountInfo(),
       callTool('phone.mcp.atxp.ai', 'phone_check_sms', {})
         .then((r) => { try { return JSON.parse(r).phoneNumber || null; } catch { return null; } })
         .catch(() => null),
     ]);
 
+    const data = accountResult.data;
     if (!data) {
-      console.error(chalk.red('Error: Could not fetch account info. Your token may be invalid or expired.'));
+      if (accountResult.status === 401) {
+        console.error(chalk.red('Error: Invalid or expired connection token.'));
+      } else {
+        console.error(chalk.red('Error: Could not fetch account info.'));
+      }
       console.error(`Try logging in again: ${chalk.cyan('npx atxp login --force')}`);
       process.exit(1);
     }
