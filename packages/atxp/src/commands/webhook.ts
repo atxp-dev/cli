@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import fs from 'fs/promises';
+import os from 'os';
 import { execSync } from 'child_process';
 import { getConnection } from '../config.js';
 
@@ -143,10 +144,17 @@ async function sendHeartbeatInstruction(webhookUrl: string, hooksToken: string):
   }
 }
 
+function getMachineId(): string | undefined {
+  // Fly sets FLY_MACHINE_ID on the VM, but nested shells (e.g. the agent's
+  // process) may not inherit it. Fall back to hostname which Fly sets to the
+  // machine ID.
+  return process.env.FLY_MACHINE_ID || os.hostname() || undefined;
+}
+
 async function enableNotifications(): Promise<void> {
-  const machineId = process.env.FLY_MACHINE_ID;
+  const machineId = getMachineId();
   if (!machineId) {
-    console.error(chalk.red('Error: FLY_MACHINE_ID not set.'));
+    console.error(chalk.red('Error: Could not detect machine ID.'));
     console.log('This command must be run from inside a Clowdbot instance.');
     process.exit(1);
   }
