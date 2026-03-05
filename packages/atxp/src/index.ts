@@ -13,7 +13,7 @@ import { musicCommand } from './commands/music.js';
 import { videoCommand } from './commands/video.js';
 import { xCommand } from './commands/x.js';
 import { emailCommand } from './commands/email.js';
-import { phoneCommand, type PhoneOptions } from './commands/phone.js';
+import { phoneCommand } from './commands/phone.js';
 import { balanceCommand } from './commands/balance.js';
 import { depositCommand } from './commands/deposit.js';
 import { paasCommand } from './commands/paas/index.js';
@@ -21,7 +21,7 @@ import { agentCommand } from './commands/agent.js';
 import { whoamiCommand } from './commands/whoami.js';
 
 import { memoryCommand, type MemoryOptions } from './commands/memory.js';
-import { contactsCommand, type ContactsOptions } from './commands/contacts.js';
+import { contactsCommand } from './commands/contacts.js';
 import { transactionsCommand } from './commands/transactions.js';
 import { notificationsCommand } from './commands/notifications.js';
 
