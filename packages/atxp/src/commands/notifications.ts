@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import fs from 'fs/promises';
+import os from 'os';
 import { execSync } from 'child_process';
 
 const NOTIFICATIONS_BASE_URL = 'https://clowdbot-notifications.corp.circuitandchisel.com';
@@ -67,7 +68,7 @@ function getMachineId(): string | undefined {
   // Fly sets hostname to the machine ID, but nested shells (e.g. the agent's
   // process) may not inherit FLY_MACHINE_ID. Only use hostname if it looks
   // like a Fly machine ID (hex string, typically 14 chars).
-  const hostname = require('os').hostname();
+  const hostname = os.hostname();
   if (hostname && /^[0-9a-f]{10,}$/.test(hostname)) return hostname;
 
   return undefined;
