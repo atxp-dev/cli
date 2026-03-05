@@ -109,7 +109,7 @@ async function enableNotifications(): Promise<void> {
     body: JSON.stringify(body),
   });
 
-  const data = await res.json() as Record<string, unknown>;
+  const data = await res.json().catch(() => ({})) as Record<string, unknown>;
   if (!res.ok) {
     const errorMsg = (data.error as string) || res.statusText;
     console.error(chalk.red(`Error: ${errorMsg}`));

@@ -95,10 +95,12 @@ export async function whoamiCommand(): Promise<void> {
     if (!data) {
       if (accountResult.status === 401) {
         console.error(chalk.red('Error: Invalid or expired connection token.'));
+        console.error(`Try logging in again: ${chalk.cyan('npx atxp login --force')}`);
+      } else if (accountResult.status) {
+        console.error(chalk.red(`Error: Could not fetch account info (HTTP ${accountResult.status}).`));
       } else {
-        console.error(chalk.red('Error: Could not fetch account info.'));
+        console.error(chalk.red('Error: Could not fetch account info (network error).'));
       }
-      console.error(`Try logging in again: ${chalk.cyan('npx atxp login --force')}`);
       process.exit(1);
     }
 
