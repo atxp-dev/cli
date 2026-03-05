@@ -151,6 +151,14 @@ function getMachineId(): string | undefined {
   return process.env.FLY_MACHINE_ID || os.hostname() || undefined;
 }
 
+async function getEmailUserId(): Promise<string | undefined> {
+  const { getAccountInfo } = await import('./whoami.js');
+  const account = await getAccountInfo();
+  if (!account?.email) return undefined;
+  // Extract local part: agent_xyz@atxp.email -> agent_xyz
+  return account.email.split('@')[0];
+}
+
 async function enableNotifications(): Promise<void> {
   const machineId = getMachineId();
   if (!machineId) {
@@ -161,10 +169,16 @@ async function enableNotifications(): Promise<void> {
 
   console.log(chalk.gray('Enabling push notifications...'));
 
+  // Resolve email user ID for event matching
+  const emailUserId = await getEmailUserId();
+
+  const body: Record<string, string> = { machine_id: machineId };
+  if (emailUserId) body.email_user_id = emailUserId;
+
   const res = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/enable`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ machine_id: machineId }),
+    body: JSON.stringify(body),
   });
 
   const data = await res.json() as Record<string, unknown>;

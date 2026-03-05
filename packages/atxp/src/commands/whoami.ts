@@ -22,6 +22,35 @@ function getBaseUrl(connectionString: string): string {
   }
 }
 
+export interface AccountInfo {
+  accountId: string;
+  accountType?: string;
+  email?: string;
+  displayName?: string;
+  sources?: Array<{ chain: string; address: string }>;
+  team?: { id: string; name: string; role: string };
+  ownerEmail?: string;
+  isOrphan?: boolean;
+}
+
+export async function getAccountInfo(): Promise<AccountInfo | null> {
+  const connection = getConnection();
+  if (!connection) return null;
+  const token = getConnectionToken(connection);
+  if (!token) return null;
+  const baseUrl = getBaseUrl(connection);
+  try {
+    const credentials = Buffer.from(`${token}:`).toString('base64');
+    const response = await fetch(`${baseUrl}/me`, {
+      headers: { 'Authorization': `Basic ${credentials}` },
+    });
+    if (!response.ok) return null;
+    return await response.json() as AccountInfo;
+  } catch {
+    return null;
+  }
+}
+
 export async function whoamiCommand(): Promise<void> {
   const connection = getConnection();
 
@@ -39,44 +68,20 @@ export async function whoamiCommand(): Promise<void> {
     process.exit(1);
   }
 
-  const baseUrl = getBaseUrl(connection);
-
   try {
-    const credentials = Buffer.from(`${token}:`).toString('base64');
-
     // Fetch account info and phone number in parallel
-    const [response, phoneNumber] = await Promise.all([
-      fetch(`${baseUrl}/me`, {
-        headers: {
-          'Authorization': `Basic ${credentials}`,
-          'Content-Type': 'application/json',
-        },
-      }),
+    const [data, phoneNumber] = await Promise.all([
+      getAccountInfo(),
       callTool('phone.mcp.atxp.ai', 'phone_check_sms', {})
         .then((r) => { try { return JSON.parse(r).phoneNumber || null; } catch { return null; } })
         .catch(() => null),
     ]);
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        console.error(chalk.red('Error: Invalid or expired connection token.'));
-        console.error(`Try logging in again: ${chalk.cyan('npx atxp login --force')}`);
-      } else {
-        console.error(chalk.red(`Error: ${response.status} ${response.statusText}`));
-      }
+    if (!data) {
+      console.error(chalk.red('Error: Could not fetch account info.'));
+      console.error(`Try logging in again: ${chalk.cyan('npx atxp login --force')}`);
       process.exit(1);
     }
-
-    const data = await response.json() as {
-      accountId: string;
-      accountType?: string;
-      email?: string;
-      displayName?: string;
-      sources?: Array<{ chain: string; address: string }>;
-      team?: { id: string; name: string; role: string };
-      ownerEmail?: string;
-      isOrphan?: boolean;
-    };
 
     // Find the primary wallet address from sources
     const wallet = data.sources?.[0];
