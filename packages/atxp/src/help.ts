@@ -122,11 +122,6 @@ export function showHelp(): void {
 
   console.log(chalk.bold('Notifications Examples:'));
   console.log('  npx atxp notifications enable           # Enable push notifications (auto-configured)');
-  console.log('  npx atxp notifications list             # List your notification webhooks');
-  console.log('  npx atxp notifications test abc123      # Send a test event');
-  console.log('  npx atxp notifications failures --since 24h  # Show failed deliveries');
-  console.log('  npx atxp notifications replay def456    # Replay a failed delivery');
-  console.log('  npx atxp notifications rotate-secret abc123  # Rotate signing secret');
   console.log();
 
   console.log(chalk.bold('Memory Examples:'));

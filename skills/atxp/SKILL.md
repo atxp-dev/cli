@@ -342,13 +342,6 @@ Enable push notifications so your agent receives a POST to its `/hooks/wake` end
 | Command | Cost | Description |
 |---------|------|-------------|
 | `npx atxp@latest notifications enable` | Free | Enable push notifications (auto-configured) |
-| `npx atxp@latest notifications list` | Free | List your notification webhooks |
-| `npx atxp@latest notifications remove <id>` | Free | Remove a notification webhook |
-| `npx atxp@latest notifications test <id>` | Free | Send a test event |
-| `npx atxp@latest notifications re-enable <id>` | Free | Re-enable a disabled webhook |
-| `npx atxp@latest notifications rotate-secret <id>` | Free | Rotate the signing secret |
-| `npx atxp@latest notifications failures` | Free | List failed deliveries |
-| `npx atxp@latest notifications replay <id>` | Free | Replay a failed delivery |
 
 Setup is zero-config for OpenClaw instances — the webhook URL and auth token are auto-discovered. Just run `notifications enable`.
 
