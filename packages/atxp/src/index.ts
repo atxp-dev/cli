@@ -23,7 +23,7 @@ import { whoamiCommand } from './commands/whoami.js';
 import { memoryCommand, type MemoryOptions } from './commands/memory.js';
 import { contactsCommand, type ContactsOptions } from './commands/contacts.js';
 import { transactionsCommand } from './commands/transactions.js';
-import { notificationsCommand } from './commands/webhook.js';
+import { notificationsCommand } from './commands/notifications.js';
 
 interface DemoOptions {
   port: number;
