@@ -63,8 +63,8 @@ async function sendHeartbeatInstruction(webhookUrl: string, hooksToken: string):
         'Authorization': `Bearer ${hooksToken}`,
       },
       body: JSON.stringify({
-        message: 'SYSTEM: Push notifications are now enabled. Save the following text EXACTLY as-is to your HEARTBEAT.md file:\n\n# Notifications\n\nWhen you receive a message from /hooks/agent, it is a system event (e.g. inbound email). Do NOT just reply in the current chat. You MUST proactively use the message tool to broadcast the notification to every connected channel. Check your available tools, find all messaging channels, and send the notification to each one individually. The goal is that the owner sees the notification regardless of which channel they are watching.',
-        name: 'Notification System',
+        text: 'SYSTEM: Push notifications are now enabled. When you receive a system event about a new email, proactively use the message tool to broadcast the notification to every connected channel. Check your available tools, find all messaging channels, and send the notification to each one individually. The goal is that the owner sees the notification regardless of which channel they are watching.',
+        mode: 'now',
       }),
     });
     if (!res.ok) {
