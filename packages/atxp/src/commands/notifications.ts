@@ -37,7 +37,10 @@ async function discoverConnectedChannels(): Promise<NotificationChannel[]> {
       // Match DM session keys: agent:main:<channel>:direct:<peerId>
       const match = key.match(/^agent:main:([^:]+):direct:(.+)$/);
       if (!match) continue;
-      const [, channel, to] = match;
+      // Sanitize: strip newlines/control chars to prevent prompt injection via session keys
+      const channel = match[1].replace(/[\n\r\x00-\x1f]/g, '').slice(0, 64);
+      const to = match[2].replace(/[\n\r\x00-\x1f]/g, '').slice(0, 128);
+      if (!channel || !to) continue;
       // Skip ephemeral channels (webchat has no persistent address)
       if (channel === 'webchat') continue;
       const dedupKey = `${channel}:${to}`;
@@ -143,7 +146,9 @@ async function configureHooksOnInstance(hooksToken: string): Promise<void> {
     // Uses split-on-header to avoid regex edge cases with anchors/newlines.
     const idx = existing.indexOf(HEARTBEAT_SECTION_HEADER);
     if (idx !== -1) {
-      const before = existing.slice(0, idx);
+      let before = existing.slice(0, idx);
+      // Ensure a newline separates preceding content from our section
+      if (before.length > 0 && !before.endsWith('\n')) before += '\n';
       const afterHeader = existing.slice(idx + HEARTBEAT_SECTION_HEADER.length);
       // Find start of next top-level heading after our section
       const nextHeading = afterHeader.search(/\n# /);
@@ -174,7 +179,6 @@ async function configureHooksOnInstance(hooksToken: string): Promise<void> {
     console.log(chalk.gray('Hooks will be configured on next instance reboot.'));
   }
 }
-
 
 function getMachineId(): string | undefined {
   const flyId = process.env.FLY_MACHINE_ID;
