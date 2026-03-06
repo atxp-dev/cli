@@ -10,7 +10,7 @@ const WORKSPACE_DIR = '/data/.openclaw/workspace';
 const HEARTBEAT_SECTION_HEADER = '# ATXP Notification Relay';
 
 // eslint-disable-next-line no-control-regex
-const sanitizeSessionValue = (s: string) => s.replace(/[\x00-\x1f"`]/g, '');
+const sanitizeSessionValue = (s: string) => s.replace(/[\x00-\x1f"`[\]]/g, '');
 
 interface EnableResponse {
   instance?: { webhookUrl?: string; hooksToken?: string };
@@ -151,7 +151,7 @@ async function configureHooksOnInstance(hooksToken: string): Promise<void> {
       // Ensure a newline separates preceding content from our section
       if (before.length > 0 && !before.endsWith('\n')) before += '\n';
       const afterHeader = existing.slice(idx + HEARTBEAT_SECTION_HEADER.length);
-      // Find start of next top-level heading after our section
+      // Find next top-level heading. Assumes a preceding newline (standard markdown).
       const nextHeading = afterHeader.search(/\n# /);
       const after = nextHeading !== -1 ? afterHeader.slice(nextHeading) : '';
       await fs.writeFile(heartbeatPath, before + section.trimEnd() + after);
@@ -259,7 +259,6 @@ async function enableNotifications(): Promise<void> {
     console.log(chalk.gray('Save the secret — it will not be shown again.'));
     console.log(chalk.gray('Use it to verify webhook signatures (HMAC-SHA256).'));
   }
-
 }
 
 function showNotificationsHelp(): void {
