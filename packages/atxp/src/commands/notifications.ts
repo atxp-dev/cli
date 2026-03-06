@@ -4,6 +4,10 @@ import os from 'os';
 import { execSync } from 'child_process';
 
 const NOTIFICATIONS_BASE_URL = 'https://clowdbot-notifications.corp.circuitandchisel.com';
+const OPENCLAW_CONFIG_PATH = '/data/.openclaw/openclaw.json';
+const SESSIONS_PATH = '/data/.openclaw/agents/main/sessions/sessions.json';
+const WORKSPACE_DIR = '/data/.openclaw/workspace';
+const HEARTBEAT_SECTION_HEADER = '# ATXP Notification Relay';
 
 interface EnableResponse {
   instance?: { webhookUrl?: string; hooksToken?: string };
@@ -22,7 +26,7 @@ interface NotificationChannel {
  * the channel type and peer ID for each active DM session.
  */
 async function discoverConnectedChannels(): Promise<NotificationChannel[]> {
-  const sessionsPath = '/data/.openclaw/agents/main/sessions/sessions.json';
+  const sessionsPath = SESSIONS_PATH;
   try {
     const raw = await fs.readFile(sessionsPath, 'utf-8');
     const sessions = JSON.parse(raw);
@@ -55,7 +59,7 @@ async function discoverConnectedChannels(): Promise<NotificationChannel[]> {
  */
 function buildHeartbeatMd(channels: NotificationChannel[]): string {
   const lines = [
-    '# ATXP Notification Relay',
+    HEARTBEAT_SECTION_HEADER,
     '',
     'When you see System: event lines about new emails or SMS messages,',
     'you MUST immediately relay each one to the user.',
@@ -85,7 +89,7 @@ function buildHeartbeatMd(channels: NotificationChannel[]): string {
 async function configureHooksOnInstance(hooksToken: string): Promise<void> {
   if (!process.env.FLY_MACHINE_ID) return;
 
-  const configPath = '/data/.openclaw/openclaw.json';
+  const configPath = OPENCLAW_CONFIG_PATH;
   try {
     const raw = await fs.readFile(configPath, 'utf-8');
     const config = JSON.parse(raw);
@@ -116,8 +120,10 @@ async function configureHooksOnInstance(hooksToken: string): Promise<void> {
         hb.to = primary.to;
         changed = true;
       }
-    } else if (!hb.target) {
+    } else if (hb.target !== 'last') {
+      // No channels discovered — fall back to 'last' and clear stale target
       hb.target = 'last';
+      delete hb.to;
       changed = true;
     }
 
@@ -128,18 +134,21 @@ async function configureHooksOnInstance(hooksToken: string): Promise<void> {
 
     // Append notification relay instructions to HEARTBEAT.md.
     // The default heartbeat prompt reads this file and follows it strictly.
-    const workspaceDir = '/data/.openclaw/workspace';
-    await fs.mkdir(workspaceDir, { recursive: true });
-    const heartbeatPath = `${workspaceDir}/HEARTBEAT.md`;
+    await fs.mkdir(WORKSPACE_DIR, { recursive: true });
+    const heartbeatPath = `${WORKSPACE_DIR}/HEARTBEAT.md`;
     const section = buildHeartbeatMd(channels);
     let existing = '';
     try { existing = await fs.readFile(heartbeatPath, 'utf-8'); } catch { /* file may not exist */ }
-    // Replace existing notification section or append if not present
-    const sectionStart = '# ATXP Notification Relay';
-    if (existing.includes(sectionStart)) {
-      // Replace from section header to next top-level heading or end of file
-      const re = new RegExp(`${sectionStart}[\\s\\S]*?(?=\\n# |$)`);
-      await fs.writeFile(heartbeatPath, existing.replace(re, section.trimEnd()));
+    // Replace existing notification section or append if not present.
+    // Uses split-on-header to avoid regex edge cases with anchors/newlines.
+    const idx = existing.indexOf(HEARTBEAT_SECTION_HEADER);
+    if (idx !== -1) {
+      const before = existing.slice(0, idx);
+      const afterHeader = existing.slice(idx + HEARTBEAT_SECTION_HEADER.length);
+      // Find start of next top-level heading after our section
+      const nextHeading = afterHeader.search(/\n# /);
+      const after = nextHeading !== -1 ? afterHeader.slice(nextHeading) : '';
+      await fs.writeFile(heartbeatPath, before + section.trimEnd() + after);
     } else {
       const separator = existing.length > 0 && !existing.endsWith('\n') ? '\n\n' : existing.length > 0 ? '\n' : '';
       await fs.writeFile(heartbeatPath, existing + separator + section);
@@ -159,8 +168,10 @@ async function configureHooksOnInstance(hooksToken: string): Promise<void> {
         // Gateway may not be running yet — config will be picked up on next start
       }
     }
-  } catch {
-    // Non-fatal — hooks will be configured on next reboot via entrypoint config sync
+  } catch (err) {
+    console.log(chalk.yellow('Warning: Could not configure instance locally.'));
+    console.log(chalk.gray(`${err instanceof Error ? err.message : err}`));
+    console.log(chalk.gray('Hooks will be configured on next instance reboot.'));
   }
 }
 
@@ -179,9 +190,13 @@ function getMachineId(): string | undefined {
 }
 
 async function getAccountId(): Promise<string | undefined> {
-  const { getAccountInfo } = await import('./whoami.js');
-  const account = await getAccountInfo();
-  return account?.accountId;
+  try {
+    const { getAccountInfo } = await import('./whoami.js');
+    const account = await getAccountInfo();
+    return account?.accountId;
+  } catch {
+    return undefined;
+  }
 }
 
 async function enableNotifications(): Promise<void> {
@@ -200,11 +215,18 @@ async function enableNotifications(): Promise<void> {
   const body: Record<string, string> = { machine_id: machineId };
   if (accountId) body.account_id = accountId;
 
-  const res = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/enable`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/enable`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    console.error(chalk.red(`Error: Could not reach notifications service.`));
+    console.error(chalk.gray(`${err instanceof Error ? err.message : err}`));
+    process.exit(1);
+  }
 
   const data = await res.json().catch(() => ({})) as EnableResponse;
   if (!res.ok) {
