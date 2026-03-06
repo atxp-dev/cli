@@ -38,8 +38,10 @@ async function discoverConnectedChannels(): Promise<NotificationChannel[]> {
       const match = key.match(/^agent:main:([^:]+):direct:(.+)$/);
       if (!match) continue;
       // Sanitize: strip newlines/control chars to prevent prompt injection via session keys
-      const channel = match[1].replace(/[\n\r\x00-\x1f]/g, '').slice(0, 64);
-      const to = match[2].replace(/[\n\r\x00-\x1f]/g, '').slice(0, 128);
+      // eslint-disable-next-line no-control-regex
+      const sanitize = (s: string) => s.replace(/[\x00-\x1f]/g, '');
+      const channel = sanitize(match[1]).slice(0, 64);
+      const to = sanitize(match[2]).slice(0, 128);
       if (!channel || !to) continue;
       // Skip ephemeral channels (webchat has no persistent address)
       if (channel === 'webchat') continue;
