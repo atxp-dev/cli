@@ -9,6 +9,9 @@ const SESSIONS_PATH = '/data/.openclaw/agents/main/sessions/sessions.json';
 const WORKSPACE_DIR = '/data/.openclaw/workspace';
 const HEARTBEAT_SECTION_HEADER = '# ATXP Notification Relay';
 
+// eslint-disable-next-line no-control-regex
+const sanitizeSessionValue = (s: string) => s.replace(/[\x00-\x1f"`]/g, '');
+
 interface EnableResponse {
   instance?: { webhookUrl?: string; hooksToken?: string };
   webhook?: { id?: string; url?: string; eventTypes?: string[]; secret?: string; enabled?: boolean };
@@ -26,9 +29,8 @@ interface NotificationChannel {
  * the channel type and peer ID for each active DM session.
  */
 async function discoverConnectedChannels(): Promise<NotificationChannel[]> {
-  const sessionsPath = SESSIONS_PATH;
   try {
-    const raw = await fs.readFile(sessionsPath, 'utf-8');
+    const raw = await fs.readFile(SESSIONS_PATH, 'utf-8');
     const sessions = JSON.parse(raw);
     const channels: NotificationChannel[] = [];
     const seen = new Set<string>();
@@ -37,11 +39,8 @@ async function discoverConnectedChannels(): Promise<NotificationChannel[]> {
       // Match DM session keys: agent:main:<channel>:direct:<peerId>
       const match = key.match(/^agent:main:([^:]+):direct:(.+)$/);
       if (!match) continue;
-      // Sanitize: strip newlines/control chars to prevent prompt injection via session keys
-      // eslint-disable-next-line no-control-regex
-      const sanitize = (s: string) => s.replace(/[\x00-\x1f]/g, '');
-      const channel = sanitize(match[1]).slice(0, 64);
-      const to = sanitize(match[2]).slice(0, 128);
+      const channel = sanitizeSessionValue(match[1]).slice(0, 64);
+      const to = sanitizeSessionValue(match[2]).slice(0, 128);
       if (!channel || !to) continue;
       // Skip ephemeral channels (webchat has no persistent address)
       if (channel === 'webchat') continue;
@@ -75,7 +74,7 @@ function buildHeartbeatMd(channels: NotificationChannel[]): string {
   if (channels.length > 0) {
     lines.push('Relay to ALL of these channels:');
     for (const c of channels) {
-      lines.push(`- Use the message tool with channel="${c.channel}" and target="${c.to}"`);
+      lines.push(`- Use the message tool with channel=\`${c.channel}\` and target=\`${c.to}\``);
     }
     lines.push('');
   }
