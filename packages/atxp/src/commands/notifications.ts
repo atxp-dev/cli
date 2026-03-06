@@ -110,7 +110,7 @@ async function enableNotifications(): Promise<void> {
   const accountId = await getAccountId();
 
   const body: Record<string, string> = { machine_id: machineId };
-  if (accountId) body.email_user_id = accountId;
+  if (accountId) body.account_id = accountId;
 
   const res = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/enable`, {
     method: 'POST',
