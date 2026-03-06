@@ -337,7 +337,7 @@ Local contacts database for resolving names to phone numbers and emails. Stored 
 
 ### Notifications
 
-Enable push notifications so your agent receives a POST to its `/hooks/wake` endpoint when events happen (e.g., inbound email or SMS), instead of polling.
+Enable push notifications so your agent receives a POST to its `/hooks/agent` endpoint when events happen (e.g., inbound email or SMS), instead of polling.
 
 | Command | Cost | Description |
 |---------|------|-------------|
