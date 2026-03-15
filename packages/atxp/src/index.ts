@@ -48,6 +48,7 @@ interface EmailOptions {
   to?: string;
   subject?: string;
   body?: string;
+  attach?: string[];
 }
 
 interface PhoneOptionsLocal {
@@ -251,6 +252,7 @@ function parseArgs(): {
     to: getArgValue('--to', ''),
     subject: getArgValue('--subject', ''),
     body: getArgValue('--body', ''),
+    attach: getAllArgValues('--attach'),
   };
 
   // Parse phone options

@@ -300,6 +300,42 @@ Each agent gets a unique address: `{user_id}@atxp.email`. Claim a username ($1.0
 | `npx atxp@latest email claim-username <username>` | $1.00 | Claim a username so your email becomes `{username}@atxp.email` instead of `{user_id}@atxp.email`. Username: 3-32 chars, starts with letter, lowercase alphanumeric/hyphens/underscores. |
 | `npx atxp@latest email release-username` | Free | Release username |
 
+#### Email Attachments
+
+**Sending attachments:** Use the `--attach` flag (repeatable) with `email send` or `email reply` to attach local files. The CLI reads each file, detects its MIME type from the extension, and base64-encodes the content automatically.
+
+```bash
+# Send with one attachment
+npx atxp@latest email send --to user@example.com --subject "Report" --body "See attached." --attach report.pdf
+
+# Send with multiple attachments
+npx atxp@latest email send --to user@example.com --subject "Files" --body "Two files." --attach report.pdf --attach chart.png
+
+# Reply with an attachment
+npx atxp@latest email reply msg_abc123 --body "Updated version attached." --attach report-v2.pdf
+```
+
+**Receiving attachments:** When listing emails (`email inbox`, `email search`) or reading a message (`email read`), attachment metadata (filename, MIME type, size) is displayed automatically. Attachment content is **not** included inline — use `email get-attachment` to download.
+
+```bash
+# Download a specific attachment by index (0-based)
+npx atxp@latest email get-attachment --message msg_abc123 --index 0
+```
+
+**MCP tool parameters for attachments:**
+
+The `email_send_email` and `email_reply` MCP tools accept an optional `attachments` array:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `filename` | string | Display name (e.g. `"report.pdf"`) |
+| `contentType` | string | MIME type (e.g. `"application/pdf"`) |
+| `content` | string | File bytes, base64-encoded |
+
+The `email_get_attachment` MCP tool accepts `messageId` (string) and `attachmentIndex` (zero-based integer) and returns the file content as base64.
+
+**Limits:** Total message size (body + all attachments) must not exceed 10 MB. Base64 encoding adds ~33% overhead, so the effective raw payload is ~7.5 MB per message.
+
 ### Phone
 
 Register a phone number to send/receive SMS and make/receive voice calls. The phone command is async — calls and inbound messages arrive asynchronously, so check `phone calls` and `phone sms` for updates.
