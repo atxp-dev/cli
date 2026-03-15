@@ -1,5 +1,7 @@
 import { callTool } from '../call-tool.js';
 import chalk from 'chalk';
+import { readFileSync } from 'fs';
+import path from 'path';
 
 const SERVER = 'email.mcp.atxp.ai';
 
@@ -7,6 +9,59 @@ interface EmailOptions {
   to?: string;
   subject?: string;
   body?: string;
+  attach?: string[];
+}
+
+interface Attachment {
+  filename: string;
+  contentType: string;
+  content: string;
+}
+
+const MIME_TYPES: Record<string, string> = {
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.txt': 'text/plain',
+  '.csv': 'text/csv',
+  '.json': 'application/json',
+  '.xml': 'application/xml',
+  '.html': 'text/html',
+  '.htm': 'text/html',
+  '.zip': 'application/zip',
+  '.gz': 'application/gzip',
+  '.tar': 'application/x-tar',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xls': 'application/vnd.ms-excel',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  '.ppt': 'application/vnd.ms-powerpoint',
+  '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+};
+
+function getMimeType(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase();
+  return MIME_TYPES[ext] || 'application/octet-stream';
+}
+
+function loadAttachments(filePaths: string[]): Attachment[] {
+  return filePaths.map((filePath) => {
+    const resolved = path.resolve(filePath);
+    const content = readFileSync(resolved);
+    return {
+      filename: path.basename(resolved),
+      contentType: getMimeType(resolved),
+      content: content.toString('base64'),
+    };
+  });
 }
 
 function showEmailHelp(): void {
@@ -26,6 +81,7 @@ function showEmailHelp(): void {
   console.log('  ' + chalk.yellow('--to') + ' ' + chalk.gray('<email>') + '      ' + 'Recipient email address (required for send)');
   console.log('  ' + chalk.yellow('--subject') + ' ' + chalk.gray('<text>') + '  ' + 'Email subject line (required for send)');
   console.log('  ' + chalk.yellow('--body') + ' ' + chalk.gray('<text>') + '     ' + 'Email body content (required)');
+  console.log('  ' + chalk.yellow('--attach') + ' ' + chalk.gray('<file>') + '   ' + 'Attach a file (repeatable)');
   console.log();
   console.log(chalk.bold('Get Attachment Options:'));
   console.log('  ' + chalk.yellow('--message') + ' ' + chalk.gray('<id>') + '    ' + 'Message ID (required)');
@@ -35,7 +91,10 @@ function showEmailHelp(): void {
   console.log('  npx atxp email inbox');
   console.log('  npx atxp email read msg_abc123');
   console.log('  npx atxp email send --to user@example.com --subject "Hello" --body "Hi there!"');
+  console.log('  npx atxp email send --to user@example.com --subject "Report" --body "See attached." --attach report.pdf');
+  console.log('  npx atxp email send --to user@example.com --subject "Files" --body "Two files." --attach a.pdf --attach b.png');
   console.log('  npx atxp email reply msg_abc123 --body "Thanks for your message!"');
+  console.log('  npx atxp email reply msg_abc123 --body "Updated version attached." --attach report-v2.pdf');
   console.log('  npx atxp email search "invoice"');
   console.log('  npx atxp email delete msg_abc123');
   console.log('  npx atxp email get-attachment --message msg_abc123 --index 0');
@@ -135,10 +194,19 @@ async function checkInbox(): Promise<void> {
 
     for (const email of parsed.messages) {
       const readIndicator = email.read === false ? chalk.yellow(' [UNREAD]') : '';
-      console.log(chalk.gray('ID: ' + email.messageId) + readIndicator);
+      const attachIndicator = email.attachments && email.attachments.length > 0
+        ? chalk.magenta(` [${email.attachments.length} attachment(s)]`)
+        : '';
+      console.log(chalk.gray('ID: ' + email.messageId) + readIndicator + attachIndicator);
       console.log(chalk.bold('From: ') + email.from);
       console.log(chalk.bold('Subject: ') + email.subject);
       console.log(chalk.bold('Date: ') + email.date);
+      if (email.attachments && email.attachments.length > 0) {
+        for (let i = 0; i < email.attachments.length; i++) {
+          const att = email.attachments[i];
+          console.log(chalk.gray(`  [${i}] ${att.filename} (${att.contentType}, ${att.size} bytes)`));
+        }
+      }
       console.log(chalk.gray('─'.repeat(50)));
     }
 
@@ -224,11 +292,19 @@ async function sendEmail(options: EmailOptions): Promise<void> {
     process.exit(1);
   }
 
-  const result = await callTool(SERVER, 'email_send_email', {
-    to,
-    subject,
-    body,
-  });
+  const args: Record<string, unknown> = { to, subject, body };
+
+  if (options.attach && options.attach.length > 0) {
+    try {
+      args.attachments = loadAttachments(options.attach);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(chalk.red('Error reading attachment: ' + msg));
+      process.exit(1);
+    }
+  }
+
+  const result = await callTool(SERVER, 'email_send_email', args);
 
   try {
     const parsed = JSON.parse(result);
@@ -264,7 +340,19 @@ async function replyToEmail(messageId?: string, options?: EmailOptions): Promise
     process.exit(1);
   }
 
-  const result = await callTool(SERVER, 'email_reply', { messageId, body });
+  const args: Record<string, unknown> = { messageId, body };
+
+  if (options?.attach && options.attach.length > 0) {
+    try {
+      args.attachments = loadAttachments(options.attach);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(chalk.red('Error reading attachment: ' + msg));
+      process.exit(1);
+    }
+  }
+
+  const result = await callTool(SERVER, 'email_reply', args);
 
   try {
     const parsed = JSON.parse(result);
@@ -314,10 +402,19 @@ async function searchEmails(query?: string): Promise<void> {
 
     for (const email of parsed.messages) {
       const readIndicator = email.read === false ? chalk.yellow(' [UNREAD]') : '';
-      console.log(chalk.gray('ID: ' + email.messageId) + readIndicator);
+      const attachIndicator = email.attachments && email.attachments.length > 0
+        ? chalk.magenta(` [${email.attachments.length} attachment(s)]`)
+        : '';
+      console.log(chalk.gray('ID: ' + email.messageId) + readIndicator + attachIndicator);
       console.log(chalk.bold('From: ') + email.from);
       console.log(chalk.bold('Subject: ') + email.subject);
       console.log(chalk.bold('Date: ') + email.date);
+      if (email.attachments && email.attachments.length > 0) {
+        for (let i = 0; i < email.attachments.length; i++) {
+          const att = email.attachments[i];
+          console.log(chalk.gray(`  [${i}] ${att.filename} (${att.contentType}, ${att.size} bytes)`));
+        }
+      }
       console.log(chalk.gray('─'.repeat(50)));
     }
   } catch {
