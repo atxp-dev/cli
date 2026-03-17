@@ -54,11 +54,13 @@ function showAgentHelp(): void {
   console.log();
   console.log(chalk.bold('Register Options:'));
   console.log('  ' + chalk.yellow('--server') + '  ' + 'Accounts server URL (default: https://accounts.atxp.ai)');
+  console.log('  ' + chalk.yellow('--redeem') + '  ' + 'Referral code to redeem at registration (e.g. ref_xxx)');
   console.log();
   console.log(chalk.bold('Examples:'));
   console.log('  npx atxp agent create');
   console.log('  npx atxp agent list');
   console.log('  npx atxp agent register');
+  console.log('  npx atxp agent register --redeem ref_xxx');
   console.log('  npx atxp agent register --server http://localhost:8016');
   console.log('  CONNECTION_TOKEN=<agent_token> npx atxp email inbox');
 }
@@ -152,6 +154,7 @@ function getArgValue(flag: string): string | undefined {
 
 async function registerAgent(): Promise<void> {
   const baseUrl = getArgValue('--server') || getBaseUrl();
+  const referralCode = getArgValue('--redeem');
 
   console.log(chalk.gray(`Registering agent at ${baseUrl}...`));
 
@@ -164,7 +167,7 @@ async function registerAgent(): Promise<void> {
   const res = await fetch(`${baseUrl}/agents/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-ATXP-Client': ATXP_CLIENT_HEADER },
-    body: JSON.stringify({ ctx }),
+    body: JSON.stringify({ ctx, ...(referralCode ? { referralCode } : {}) }),
   });
 
   if (!res.ok) {
