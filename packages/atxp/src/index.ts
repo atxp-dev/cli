@@ -7,7 +7,7 @@ import { runDemo } from './run-demo.js';
 import { showHelp } from './help.js';
 import { checkAllDependencies, showDependencyError } from './check-dependencies.js';
 import { login } from './login.js';
-import { searchCommand } from './commands/search.js';
+import { searchCommand, type SearchOptions } from './commands/search.js';
 import { imageCommand } from './commands/image.js';
 import { musicCommand } from './commands/music.js';
 import { videoCommand } from './commands/video.js';
@@ -114,6 +114,7 @@ function parseArgs(): {
   paasOptions: PaasOptions;
   paasArgs: string[];
   toolArgs: string;
+  searchOptions: SearchOptions;
   memoryOptions: MemoryOptions;
   contactsOptions: ContactsOptionsLocal;
 } {
@@ -133,6 +134,7 @@ function parseArgs(): {
       paasOptions: {},
       paasArgs: [],
       toolArgs: '',
+      searchOptions: {},
       memoryOptions: {},
       contactsOptions: {},
     };
@@ -189,8 +191,22 @@ function parseArgs(): {
     appName = args.find((arg) => !arg.startsWith('-') && arg !== 'create');
   }
 
-  // Get tool arguments (everything after the command)
-  const toolArgs = process.argv.slice(3).filter((arg) => !arg.startsWith('-')).join(' ');
+  // Get tool arguments (everything after the command), excluding flags and their values
+  const toolArgs = (() => {
+    const args = process.argv.slice(3);
+    const result: string[] = [];
+    for (let i = 0; i < args.length; i++) {
+      if (args[i].startsWith('-')) {
+        // Skip the flag and its value (if the next arg doesn't start with -)
+        if (i + 1 < args.length && !args[i + 1].startsWith('-')) {
+          i++;
+        }
+      } else {
+        result.push(args[i]);
+      }
+    }
+    return result.join(' ');
+  })();
 
   // Get all values for a repeatable flag (like --db can appear multiple times)
   const getAllArgValues = (flag: string): string[] => {
@@ -270,6 +286,12 @@ function parseArgs(): {
     direction: getArgValue('--direction', ''),
   };
 
+  // Parse search options
+  const searchOptions: SearchOptions = {
+    startDate: getArgValue('--start-date', ''),
+    endDate: getArgValue('--end-date', ''),
+  };
+
   // Parse memory options
   const memoryOptions: MemoryOptions = {
     path: getArgValue('--path', ''),
@@ -295,12 +317,13 @@ function parseArgs(): {
     paasOptions,
     paasArgs,
     toolArgs,
+    searchOptions,
     memoryOptions,
     contactsOptions,
   };
 }
 
-const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, memoryOptions, contactsOptions } = parseArgs();
+const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, searchOptions, memoryOptions, contactsOptions } = parseArgs();
 
 // Extract positional args from argv, skipping flag values (e.g., --path <val> --topk <val>)
 function extractPositionalArgs(startIndex: number): string {
@@ -367,7 +390,7 @@ async function main() {
       break;
 
     case 'search':
-      await searchCommand(toolArgs);
+      await searchCommand(toolArgs, searchOptions);
       break;
 
     case 'image':
