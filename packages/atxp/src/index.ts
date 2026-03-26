@@ -9,7 +9,7 @@ import { checkAllDependencies, showDependencyError } from './check-dependencies.
 import { login } from './login.js';
 import { searchCommand, type SearchOptions } from './commands/search.js';
 import { imageCommand } from './commands/image.js';
-import { musicCommand } from './commands/music.js';
+import { musicCommand, type MusicOptions } from './commands/music.js';
 import { videoCommand } from './commands/video.js';
 import { xCommand } from './commands/x.js';
 import { emailCommand } from './commands/email.js';
@@ -114,6 +114,7 @@ function parseArgs(): {
   paasOptions: PaasOptions;
   paasArgs: string[];
   toolArgs: string;
+  musicOptions: MusicOptions;
   searchOptions: SearchOptions;
   memoryOptions: MemoryOptions;
   contactsOptions: ContactsOptionsLocal;
@@ -286,6 +287,11 @@ function parseArgs(): {
     direction: getArgValue('--direction', ''),
   };
 
+  // Parse music options
+  const musicOptions: MusicOptions = {
+    lyrics: getArgValue('--lyrics', ''),
+  };
+
   // Parse search options
   const searchOptions: SearchOptions = {
     startDate: getArgValue('--start-date', ''),
@@ -317,13 +323,14 @@ function parseArgs(): {
     paasOptions,
     paasArgs,
     toolArgs,
+    musicOptions,
     searchOptions,
     memoryOptions,
     contactsOptions,
   };
 }
 
-const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, searchOptions, memoryOptions, contactsOptions } = parseArgs();
+const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, musicOptions, searchOptions, memoryOptions, contactsOptions } = parseArgs();
 
 // Extract positional args from argv, skipping flag values (e.g., --path <val> --topk <val>)
 function extractPositionalArgs(startIndex: number): string {
@@ -398,7 +405,7 @@ async function main() {
       break;
 
     case 'music':
-      await musicCommand(toolArgs);
+      await musicCommand(toolArgs, musicOptions);
       break;
 
     case 'video':

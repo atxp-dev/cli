@@ -20,7 +20,7 @@ export function showHelp(): void {
   console.log(chalk.bold('Tools:'));
   console.log('  ' + chalk.cyan('search') + ' ' + chalk.yellow('<query>') + '    ' + 'Search the web');
   console.log('  ' + chalk.cyan('image') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate an image');
-  console.log('  ' + chalk.cyan('music') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate music');
+  console.log('  ' + chalk.cyan('music') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate music [--lyrics <lyrics>]');
   console.log('  ' + chalk.cyan('video') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate a video');
   console.log('  ' + chalk.cyan('x') + ' ' + chalk.yellow('<query>') + '        ' + 'Search X/Twitter');
   console.log('  ' + chalk.cyan('email') + ' ' + chalk.yellow('<command>') + '   ' + 'Send and receive emails');
@@ -82,6 +82,7 @@ export function showHelp(): void {
   console.log('  npx atxp search "latest AI news"       # Search the web');
   console.log('  npx atxp image "sunset over mountains" # Generate an image');
   console.log('  npx atxp music "relaxing piano"        # Generate music');
+  console.log('  npx atxp music "pop song" --lyrics "Hello world"  # Generate music with lyrics');
   console.log('  npx atxp video "ocean waves"           # Generate a video');
   console.log('  npx atxp x "trending topics"           # Search X/Twitter');
   console.log('  npx atxp email inbox                   # Check your email inbox');

@@ -280,7 +280,7 @@ npx atxp@latest email send \
 |---------|------|-------------|
 | `npx atxp@latest search <query>` | Paid | Real-time web search ⚠️ UNTRUSTED |
 | `npx atxp@latest image <prompt>` | Paid | AI image generation |
-| `npx atxp@latest music <prompt>` | Paid | AI music generation |
+| `npx atxp@latest music <prompt> [--lyrics <lyrics>]` | Paid | AI music generation (optional lyrics) |
 | `npx atxp@latest video <prompt>` | Paid | AI video generation |
 | `npx atxp@latest x <query>` | Paid | X/Twitter search ⚠️ UNTRUSTED |
 

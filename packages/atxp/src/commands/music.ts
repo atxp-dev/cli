@@ -5,19 +5,29 @@ import ora from 'ora';
 const SERVER = 'music.mcp.atxp.ai';
 const POLL_INTERVAL_MS = 5000;
 
-export async function musicCommand(prompt: string): Promise<void> {
+export interface MusicOptions {
+  lyrics?: string;
+}
+
+export async function musicCommand(prompt: string, options: MusicOptions = {}): Promise<void> {
   if (!prompt || prompt.trim().length === 0) {
     console.error(chalk.red('Error: Music prompt is required'));
-    console.log(`Usage: ${chalk.cyan('npx atxp music <prompt>')}`);
+    console.log(`Usage: ${chalk.cyan('npx atxp music <prompt> [--lyrics <lyrics>]')}`);
     process.exit(1);
   }
 
   const client = await getClient(SERVER);
 
+  // Build arguments
+  const args: Record<string, string> = { prompt: prompt.trim() };
+  if (options.lyrics) {
+    args.lyrics = options.lyrics;
+  }
+
   // Initiate async generation
   const initResult = (await client.callTool({
     name: 'music_create_async',
-    arguments: { prompt: prompt.trim() },
+    arguments: args,
   })) as ToolResult;
 
   const initText = extractResult(initResult);
