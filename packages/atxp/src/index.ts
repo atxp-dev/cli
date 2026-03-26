@@ -135,6 +135,7 @@ function parseArgs(): {
       paasOptions: {},
       paasArgs: [],
       toolArgs: '',
+      musicOptions: {},
       searchOptions: {},
       memoryOptions: {},
       contactsOptions: {},
