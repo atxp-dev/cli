@@ -28,6 +28,7 @@ function showPhoneHelp(): void {
   console.log(chalk.bold('  SMS:'));
   console.log('  ' + chalk.cyan('npx atxp phone sms') + ' ' + chalk.yellow('[--unread-only] [--direction <dir>]') + '  ' + 'Check SMS inbox');
   console.log('  ' + chalk.cyan('npx atxp phone read-sms') + ' ' + chalk.yellow('<messageId>') + '             ' + 'Read a specific SMS');
+  console.log('  ' + chalk.cyan('npx atxp phone mark-read') + ' ' + chalk.yellow('<id> [id...]') + '            ' + 'Mark messages as read');
   console.log('  ' + chalk.cyan('npx atxp phone send-sms') + ' ' + chalk.yellow('<options>') + '               ' + 'Send an SMS ($0.05)');
   console.log('  ' + chalk.cyan('npx atxp phone get-attachment') + ' ' + chalk.yellow('<options>') + '         ' + 'Download an MMS attachment');
   console.log();
@@ -70,6 +71,8 @@ function showPhoneHelp(): void {
   console.log('  npx atxp phone sms --direction incoming');
   console.log('  npx atxp phone sms --unread-only --direction incoming');
   console.log('  npx atxp phone read-sms sms_abc123');
+  console.log('  npx atxp phone mark-read sms_abc123');
+  console.log('  npx atxp phone mark-read sms_abc123 sms_def456');
   console.log('  npx atxp phone send-sms --to "+14155551234" --body "Hello!"');
   console.log('  npx atxp phone send-sms --to "+14155551234" --body "Check this" --media "https://example.com/image.jpg"');
   console.log('  npx atxp phone call --to "+14155551234" --instruction "Ask about their business hours"');
@@ -86,6 +89,7 @@ function showPhoneHelp(): void {
   console.log('  Configure voice: ' + chalk.green('FREE'));
   console.log('  Check SMS:       ' + chalk.green('FREE'));
   console.log('  Read SMS:        ' + chalk.green('FREE'));
+  console.log('  Mark read:       ' + chalk.green('FREE'));
   console.log('  Send SMS:        ' + chalk.yellow('$0.05 per message'));
   console.log('  Get attachment:  ' + chalk.green('FREE'));
   console.log('  Make call:       ' + chalk.yellow('$0.10 per call'));
@@ -119,6 +123,10 @@ export async function phoneCommand(subCommand: string, options: PhoneOptions, po
 
     case 'read-sms':
       await readSms(positionalArg);
+      break;
+
+    case 'mark-read':
+      await markRead(positionalArg);
       break;
 
     case 'send-sms':
@@ -331,6 +339,34 @@ async function readSms(messageId?: string): Promise<void> {
       }
       console.log(chalk.gray('Use `npx atxp phone get-attachment --message <id> --index <n>` to download'));
     }
+  } catch {
+    console.log(result);
+  }
+}
+
+async function markRead(firstId?: string): Promise<void> {
+  // Collect all positional args after "mark-read"
+  const markReadIdx = process.argv.findIndex((arg) => arg === 'mark-read');
+  const ids = markReadIdx !== -1 ? process.argv.slice(markReadIdx + 1).filter((a) => !a.startsWith('-')) : [];
+  if (firstId && !ids.includes(firstId)) ids.unshift(firstId);
+
+  if (ids.length === 0) {
+    console.error(chalk.red('Error: at least one message ID is required'));
+    console.log(`Usage: ${chalk.cyan('npx atxp phone mark-read <id> [id...]')}`);
+    console.log(chalk.gray('Use `npx atxp phone sms --unread-only` to see unread message IDs'));
+    process.exit(1);
+  }
+
+  const result = await callTool(SERVER, 'phone_mark_read', { message_ids: ids });
+
+  try {
+    const parsed = JSON.parse(result);
+    if (parsed.status === 'error') {
+      console.error(chalk.red('Error: ' + parsed.errorMessage));
+      process.exit(1);
+    }
+
+    console.log(chalk.green(`Marked ${parsed.markedCount} message(s) as read.`));
   } catch {
     console.log(result);
   }
