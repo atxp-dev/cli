@@ -10,6 +10,7 @@ interface EmailOptions {
   subject?: string;
   body?: string;
   attach?: string[];
+  unreadOnly?: boolean;
 }
 
 interface Attachment {
@@ -77,6 +78,9 @@ function showEmailHelp(): void {
   console.log('  ' + chalk.cyan('npx atxp email claim-username') + ' ' + chalk.yellow('<name>') + '        ' + 'Claim a username ($1.00)');
   console.log('  ' + chalk.cyan('npx atxp email release-username') + '               ' + 'Release your username');
   console.log();
+  console.log(chalk.bold('Inbox/Search Options:'));
+  console.log('  ' + chalk.yellow('--unread-only') + '          ' + 'Only show unread messages');
+  console.log();
   console.log(chalk.bold('Send/Reply Options:'));
   console.log('  ' + chalk.yellow('--to') + ' ' + chalk.gray('<email>') + '      ' + 'Recipient email address (required for send)');
   console.log('  ' + chalk.yellow('--subject') + ' ' + chalk.gray('<text>') + '  ' + 'Email subject line (required for send)');
@@ -89,6 +93,7 @@ function showEmailHelp(): void {
   console.log();
   console.log(chalk.bold('Examples:'));
   console.log('  npx atxp email inbox');
+  console.log('  npx atxp email inbox --unread-only');
   console.log('  npx atxp email read msg_abc123');
   console.log('  npx atxp email send --to user@example.com --subject "Hello" --body "Hi there!"');
   console.log('  npx atxp email send --to user@example.com --subject "Report" --body "See attached." --attach report.pdf');
@@ -125,7 +130,7 @@ export async function emailCommand(subCommand: string, options: EmailOptions, me
 
   switch (subCommand) {
     case 'inbox':
-      await checkInbox();
+      await checkInbox(options.unreadOnly);
       break;
 
     case 'read':
@@ -141,7 +146,7 @@ export async function emailCommand(subCommand: string, options: EmailOptions, me
       break;
 
     case 'search':
-      await searchEmails(messageId);
+      await searchEmails(messageId, options.unreadOnly);
       break;
 
     case 'delete':
@@ -168,8 +173,10 @@ export async function emailCommand(subCommand: string, options: EmailOptions, me
   }
 }
 
-async function checkInbox(): Promise<void> {
-  const result = await callTool(SERVER, 'email_check_inbox', {});
+async function checkInbox(unreadOnly?: boolean): Promise<void> {
+  const args: Record<string, unknown> = {};
+  if (unreadOnly) args.unreadOnly = true;
+  const result = await callTool(SERVER, 'email_check_inbox', args);
 
   try {
     const parsed = JSON.parse(result);
@@ -373,14 +380,16 @@ async function replyToEmail(messageId?: string, options?: EmailOptions): Promise
   }
 }
 
-async function searchEmails(query?: string): Promise<void> {
+async function searchEmails(query?: string, unreadOnly?: boolean): Promise<void> {
   if (!query) {
     console.error(chalk.red('Error: search query is required'));
     console.log(`Usage: ${chalk.cyan('npx atxp email search <query>')}`);
     process.exit(1);
   }
 
-  const result = await callTool(SERVER, 'email_search', { query });
+  const args: Record<string, unknown> = { query };
+  if (unreadOnly) args.unreadOnly = true;
+  const result = await callTool(SERVER, 'email_search', args);
 
   try {
     const parsed = JSON.parse(result);

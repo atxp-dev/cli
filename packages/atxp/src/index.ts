@@ -49,6 +49,7 @@ interface EmailOptions {
   subject?: string;
   body?: string;
   attach?: string[];
+  unreadOnly?: boolean;
 }
 
 interface PhoneOptionsLocal {
@@ -271,6 +272,7 @@ function parseArgs(): {
     subject: getArgValue('--subject', ''),
     body: getArgValue('--body', ''),
     attach: getAllArgValues('--attach'),
+    unreadOnly: process.argv.includes('--unread-only'),
   };
 
   // Parse phone options
