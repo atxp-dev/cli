@@ -73,6 +73,7 @@ function showEmailHelp(): void {
   console.log('  ' + chalk.cyan('npx atxp email send') + ' ' + chalk.yellow('<options>') + '                ' + 'Send an email');
   console.log('  ' + chalk.cyan('npx atxp email reply') + ' ' + chalk.yellow('<messageId>') + ' ' + chalk.yellow('<options>') + '  ' + 'Reply to a message');
   console.log('  ' + chalk.cyan('npx atxp email search') + ' ' + chalk.yellow('<query>') + '              ' + 'Search emails');
+  console.log('  ' + chalk.cyan('npx atxp email mark-read') + ' ' + chalk.yellow('<messageId>') + '        ' + 'Mark a message as read');
   console.log('  ' + chalk.cyan('npx atxp email delete') + ' ' + chalk.yellow('<messageId>') + '           ' + 'Delete a message');
   console.log('  ' + chalk.cyan('npx atxp email get-attachment') + ' ' + chalk.yellow('<options>') + '     ' + 'Download an attachment');
   console.log('  ' + chalk.cyan('npx atxp email claim-username') + ' ' + chalk.yellow('<name>') + '        ' + 'Claim a username ($1.00)');
@@ -101,6 +102,7 @@ function showEmailHelp(): void {
   console.log('  npx atxp email reply msg_abc123 --body "Thanks for your message!"');
   console.log('  npx atxp email reply msg_abc123 --body "Updated version attached." --attach report-v2.pdf');
   console.log('  npx atxp email search "invoice"');
+  console.log('  npx atxp email mark-read msg_abc123');
   console.log('  npx atxp email delete msg_abc123');
   console.log('  npx atxp email get-attachment --message msg_abc123 --index 0');
   console.log('  npx atxp email claim-username myname');
@@ -110,6 +112,7 @@ function showEmailHelp(): void {
   console.log('  Inbox check:     ' + chalk.green('FREE'));
   console.log('  Read message:    ' + chalk.green('FREE'));
   console.log('  Search:          ' + chalk.green('FREE'));
+  console.log('  Mark as read:    ' + chalk.green('FREE'));
   console.log('  Delete:          ' + chalk.green('FREE'));
   console.log('  Get attachment:  ' + chalk.green('FREE'));
   console.log('  Send email:      ' + chalk.yellow('$0.01 per email'));
@@ -147,6 +150,10 @@ export async function emailCommand(subCommand: string, options: EmailOptions, me
 
     case 'search':
       await searchEmails(messageId, options.unreadOnly);
+      break;
+
+    case 'mark-read':
+      await markAsRead(messageId);
       break;
 
     case 'delete':
@@ -426,6 +433,28 @@ async function searchEmails(query?: string, unreadOnly?: boolean): Promise<void>
       }
       console.log(chalk.gray('─'.repeat(50)));
     }
+  } catch {
+    console.log(result);
+  }
+}
+
+async function markAsRead(messageId?: string): Promise<void> {
+  if (!messageId) {
+    console.error(chalk.red('Error: messageId is required'));
+    console.log(`Usage: ${chalk.cyan('npx atxp email mark-read <messageId>')}`);
+    process.exit(1);
+  }
+
+  const result = await callTool(SERVER, 'email_mark_as_read', { messageId });
+
+  try {
+    const parsed = JSON.parse(result);
+    if (parsed.status === 'error') {
+      console.error(chalk.red('Error: ' + parsed.errorMessage));
+      process.exit(1);
+    }
+
+    console.log(chalk.green('Message marked as read.'));
   } catch {
     console.log(result);
   }
