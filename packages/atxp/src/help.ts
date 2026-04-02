@@ -31,6 +31,7 @@ export function showHelp(): void {
   console.log('  ' + chalk.cyan('agent') + ' ' + chalk.yellow('<command>') + '   ' + 'Create and manage agent accounts');
   console.log('  ' + chalk.cyan('memory') + ' ' + chalk.yellow('<command>') + '  ' + 'Manage, search, and back up agent memory files');
   console.log('  ' + chalk.cyan('contacts') + ' ' + chalk.yellow('<command>') + '' + 'Manage local contacts with cloud backup');
+  console.log('  ' + chalk.cyan('git') + ' ' + chalk.yellow('<command>') + '     ' + 'Git repository hosting (create, clone, push)');
   console.log('  ' + chalk.cyan('notifications') + ' ' + chalk.yellow('enable') + '  ' + 'Enable push notifications');
   console.log('  ' + chalk.cyan('transactions') + ' ' + chalk.yellow('[options]') + ' ' + 'View recent transaction history');
   console.log();
@@ -142,6 +143,14 @@ export function showHelp(): void {
   console.log('  npx atxp contacts search "Kenny"');
   console.log('  npx atxp contacts push');
   console.log('  npx atxp contacts pull');
+  console.log();
+
+  console.log(chalk.bold('Git Examples:'));
+  console.log('  npx atxp git create my-project           # Create a repo ($0.50)');
+  console.log('  npx atxp git list                        # List your repos');
+  console.log('  npx atxp git remote-url my-project       # Get a read-only clone URL');
+  console.log('  npx atxp git remote-url my-project --writable  # Get a push-capable URL ($0.01)');
+  console.log('  npx atxp git delete my-project           # Delete a repo');
   console.log();
 
   console.log(chalk.bold('PAAS Examples:'));

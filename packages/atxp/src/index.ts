@@ -21,6 +21,7 @@ import { agentCommand } from './commands/agent.js';
 import { whoamiCommand } from './commands/whoami.js';
 
 import { memoryCommand, type MemoryOptions } from './commands/memory.js';
+import { gitCommand, type GitOptions } from './commands/git.js';
 import { contactsCommand } from './commands/contacts.js';
 import { transactionsCommand } from './commands/transactions.js';
 import { notificationsCommand } from './commands/notifications.js';
@@ -118,6 +119,7 @@ function parseArgs(): {
   musicOptions: MusicOptions;
   searchOptions: SearchOptions;
   memoryOptions: MemoryOptions;
+  gitOptions: GitOptions;
   contactsOptions: ContactsOptionsLocal;
 } {
   const command = process.argv[2];
@@ -125,7 +127,7 @@ function parseArgs(): {
 
   // Check for help flags early - but NOT for paas or email commands (they handle --help internally)
   const helpFlag = process.argv.includes('--help') || process.argv.includes('-h');
-  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'phone' && command !== 'agent' && command !== 'fund' && command !== 'deposit' && command !== 'memory' && command !== 'backup' && command !== 'contacts' && command !== 'notifications') {
+  if (helpFlag && command !== 'paas' && command !== 'email' && command !== 'phone' && command !== 'agent' && command !== 'fund' && command !== 'deposit' && command !== 'memory' && command !== 'backup' && command !== 'contacts' && command !== 'notifications' && command !== 'git') {
     return {
       command: 'help',
       demoOptions: { port: 8017, dir: '', verbose: false, refresh: false },
@@ -139,6 +141,7 @@ function parseArgs(): {
       musicOptions: {},
       searchOptions: {},
       memoryOptions: {},
+      gitOptions: {},
       contactsOptions: {},
     };
   }
@@ -307,6 +310,16 @@ function parseArgs(): {
     topk: getArgValue('--topk', '') ? parseInt(getArgValue('--topk', '')!, 10) : undefined,
   };
 
+  // Parse git options
+  const gitOptions: GitOptions = {
+    writable: process.argv.includes('--writable'),
+    ttl: getArgValue('--ttl', '') ? parseInt(getArgValue('--ttl', '')!, 10) : undefined,
+    defaultBranch: getArgValue('--default-branch', ''),
+    visibility: getArgValue('--visibility', ''),
+    limit: getArgValue('--limit', '-l') ? parseInt(getArgValue('--limit', '-l')!, 10) : undefined,
+    cursor: getArgValue('--cursor', ''),
+  };
+
   // Parse contacts options
   const contactsOptions: ContactsOptionsLocal = {
     name: getArgValue('--name', ''),
@@ -329,11 +342,12 @@ function parseArgs(): {
     musicOptions,
     searchOptions,
     memoryOptions,
+    gitOptions,
     contactsOptions,
   };
 }
 
-const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, musicOptions, searchOptions, memoryOptions, contactsOptions } = parseArgs();
+const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, musicOptions, searchOptions, memoryOptions, gitOptions, contactsOptions } = parseArgs();
 
 // Extract positional args from argv, skipping flag values (e.g., --path <val> --topk <val>)
 function extractPositionalArgs(startIndex: number): string {
@@ -461,6 +475,10 @@ async function main() {
 
     case 'contacts':
       await contactsCommand(subCommand || '', contactsOptions, process.argv[4]);
+      break;
+
+    case 'git':
+      await gitCommand(subCommand || '', gitOptions, process.argv[4]);
       break;
 
     case 'notifications':

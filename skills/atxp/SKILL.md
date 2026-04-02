@@ -394,6 +394,7 @@ For programmatic access, ATXP exposes MCP-compatible tool servers:
 | `x-live-search.mcp.atxp.ai` | `x_live_search` |
 | `email.mcp.atxp.ai` | `email_check_inbox`, `email_get_message`, `email_send_email`, `email_reply`, `email_search`, `email_delete`, `email_get_attachment`, `email_claim_username`, `email_release_username` |
 | `phone.mcp.atxp.ai` | `phone_register`, `phone_release`, `phone_configure_voice`, `phone_send_sms`, `phone_check_sms`, `phone_get_sms`, `phone_get_attachment`, `phone_call`, `phone_check_calls`, `phone_get_call`, `phone_search` |
+| `git.mcp.atxp.ai` | `git_create_repo`, `git_list_repos`, `git_get_remote_url`, `git_delete_repo` (see `atxp-git` skill) |
 | `paas.mcp.atxp.ai` | PaaS tools (see `atxp-paas` skill) |
 
 ### TypeScript SDK
@@ -444,6 +445,14 @@ The **atxp-memory** skill provides agent memory management — cloud backup/rest
 
 ```bash
 npx skills add atxp-dev/cli --skill atxp-memory
+```
+
+### ATXP Git
+
+The **atxp-git** skill provides Git repository hosting for agents — create repos, get authenticated clone/push URLs, and manage repositories on [code.storage](https://code.storage). It is packaged as a separate skill because it interacts with a **different service** (`git.mcp.atxp.ai` and `*.atxp.code.storage`) and writes cloned repositories to the local filesystem via native Git. Remote URLs are **ephemeral** — they embed a time-limited JWT and expire after 1 hour by default. If your agent needs to host, clone, or push code, install it separately:
+
+```bash
+npx skills add atxp-dev/cli --skill atxp-git
 ```
 
 ## Support
