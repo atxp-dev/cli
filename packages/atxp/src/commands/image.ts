@@ -5,19 +5,35 @@ import ora from 'ora';
 const SERVER = 'image.mcp.atxp.ai';
 const POLL_INTERVAL_MS = 3000;
 
-export async function imageCommand(prompt: string): Promise<void> {
+export interface ImageOptions {
+  /** Optional model override (e.g. gpt-image-2, gpt-4o, dall-e-3, gemini-3-pro-image-preview).
+   *  When omitted, the server picks based on its default. */
+  model?: string;
+  /** Optional aspect ratio (e.g. "1:1", "16:9", "9:16"). */
+  aspectRatio?: string;
+}
+
+export async function imageCommand(prompt: string, options: ImageOptions = {}): Promise<void> {
   if (!prompt || prompt.trim().length === 0) {
     console.error(chalk.red('Error: Image prompt is required'));
-    console.log(`Usage: ${chalk.cyan('npx atxp image <prompt>')}`);
+    console.log(
+      `Usage: ${chalk.cyan('npx atxp image <prompt> [--model <model>] [--aspect-ratio <ratio>]')}`
+    );
     process.exit(1);
   }
 
   const client = await getClient(SERVER);
 
+  // Build arguments — only include optional fields when set so we never
+  // override server defaults with empty strings.
+  const args: Record<string, string> = { prompt: prompt.trim() };
+  if (options.model) args.model = options.model;
+  if (options.aspectRatio) args.aspectRatio = options.aspectRatio;
+
   // Initiate async generation
   const initResult = (await client.callTool({
     name: 'image_create_image_async',
-    arguments: { prompt: prompt.trim() },
+    arguments: args,
   })) as ToolResult;
 
   const initText = extractResult(initResult);
