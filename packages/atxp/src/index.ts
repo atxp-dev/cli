@@ -8,7 +8,7 @@ import { showHelp } from './help.js';
 import { checkAllDependencies, showDependencyError } from './check-dependencies.js';
 import { login } from './login.js';
 import { searchCommand, type SearchOptions } from './commands/search.js';
-import { imageCommand } from './commands/image.js';
+import { imageCommand, type ImageOptions } from './commands/image.js';
 import { musicCommand, type MusicOptions } from './commands/music.js';
 import { videoCommand } from './commands/video.js';
 import { xCommand } from './commands/x.js';
@@ -117,6 +117,7 @@ function parseArgs(): {
   paasArgs: string[];
   toolArgs: string;
   musicOptions: MusicOptions;
+  imageOptions: ImageOptions;
   searchOptions: SearchOptions;
   memoryOptions: MemoryOptions;
   gitOptions: GitOptions;
@@ -139,6 +140,7 @@ function parseArgs(): {
       paasArgs: [],
       toolArgs: '',
       musicOptions: {},
+      imageOptions: {},
       searchOptions: {},
       memoryOptions: {},
       gitOptions: {},
@@ -298,6 +300,14 @@ function parseArgs(): {
     lyrics: getArgValue('--lyrics', ''),
   };
 
+  // Parse image options. Accept both --aspect-ratio and --aspectRatio for
+  // ergonomic parity with the underlying tool's parameter name.
+  const imageOptions: ImageOptions = {
+    model: getArgValue('--model', '') || undefined,
+    aspectRatio:
+      getArgValue('--aspect-ratio', '') || getArgValue('--aspectRatio', '') || undefined,
+  };
+
   // Parse search options
   const searchOptions: SearchOptions = {
     startDate: getArgValue('--start-date', ''),
@@ -340,6 +350,7 @@ function parseArgs(): {
     paasArgs,
     toolArgs,
     musicOptions,
+    imageOptions,
     searchOptions,
     memoryOptions,
     gitOptions,
@@ -347,7 +358,7 @@ function parseArgs(): {
   };
 }
 
-const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, musicOptions, searchOptions, memoryOptions, gitOptions, contactsOptions } = parseArgs();
+const { command, subCommand, demoOptions, createOptions, loginOptions, emailOptions, phoneOptions, paasOptions, paasArgs, toolArgs, musicOptions, imageOptions, searchOptions, memoryOptions, gitOptions, contactsOptions } = parseArgs();
 
 // Extract positional args from argv, skipping flag values (e.g., --path <val> --topk <val>)
 function extractPositionalArgs(startIndex: number): string {
@@ -418,7 +429,7 @@ async function main() {
       break;
 
     case 'image':
-      await imageCommand(toolArgs);
+      await imageCommand(toolArgs, imageOptions);
       break;
 
     case 'music':

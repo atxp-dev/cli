@@ -19,7 +19,7 @@ export function showHelp(): void {
 
   console.log(chalk.bold('Tools:'));
   console.log('  ' + chalk.cyan('search') + ' ' + chalk.yellow('<query>') + '    ' + 'Search the web');
-  console.log('  ' + chalk.cyan('image') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate an image');
+  console.log('  ' + chalk.cyan('image') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate an image [--model <model>] [--aspect-ratio <ratio>]');
   console.log('  ' + chalk.cyan('music') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate music [--lyrics <lyrics>]');
   console.log('  ' + chalk.cyan('video') + ' ' + chalk.yellow('<prompt>') + '    ' + 'Generate a video');
   console.log('  ' + chalk.cyan('x') + ' ' + chalk.yellow('<query>') + '        ' + 'Search X/Twitter');
@@ -82,6 +82,7 @@ export function showHelp(): void {
   console.log('  npx atxp login --token $TOKEN          # Log in with token (headless)');
   console.log('  npx atxp search "latest AI news"       # Search the web');
   console.log('  npx atxp image "sunset over mountains" # Generate an image');
+  console.log('  npx atxp image "wizard typing" --model gpt-image-2 --aspect-ratio 16:9');
   console.log('  npx atxp music "relaxing piano"        # Generate music');
   console.log('  npx atxp music "pop song" --lyrics "Hello world"  # Generate music with lyrics');
   console.log('  npx atxp video "ocean waves"           # Generate a video');
